@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SubscribeForm from '../../components/SubscribeForm.astro';
+
+const apiBase = import.meta.env.PUBLIC_SUBSCRIBE_API_URL ?? '';
+---
+
+<BaseLayout title="Newsletter 存档" description="jvyin 的 newsletter 存档" noindex={true}>
+  <article>
+    <div class="page-head" style="padding-bottom: 0.5rem">
+      <h1 id="issue-title">加载中…</h1>
+    </div>
+    <div class="post-meta" id="issue-meta"></div>
+    <div class="prose" id="issue-body" style="padding-top: 1.5rem"></div>
+    <a class="back-link" href="/newsletter/">← 返回 Newsletter</a>
+  </article>
+
+  <SubscribeForm />
+
+  <script define:vars={{ apiBase }}>
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const ep = (id) => 'EP' + String(Number(id)).padStart(2, '0');
+    const m = location.pathname.match(/\/newsletter\/(\d+)\/?$/);
+    const id = m ? m[1] : '';
+    (async () => {
+      if (!id) {
+        document.getElementById('issue-title').textContent = '无效的期号';
+        return;
+      }
+      try {
+        const res = await fetch(`${apiBase}/api/newsletters/${id}`);
+        if (!res.ok) throw new Error('not found');
+        const d = await res.json();
+        if (!d.ok || !d.issue) throw new Error('not found');
+        const issue = d.issue;
+        document.title = `${ep(id)} · ${issue.title} · jvyin`;
+        document.getElementById('issue-title').textContent = issue.title;
+        document.getElementById('issue-meta').innerHTML =
+          `<time>${esc(issue.pubDate ?? '')}</time><span>${ep(id)}</span>`;
+        document.getElementById('issue-body').innerHTML = issue.articleHtml ?? '';
+      } catch {
+        document.getElementById('issue-title').textContent = '该期不存在';
+      }
+    })();
+  </script>
+</BaseLayout>

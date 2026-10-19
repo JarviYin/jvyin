@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+import '../styles/tuba.css';
+import { site } from '../site.config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Tuba Labs — Research • Build • Invest',
+  description = 'Tuba Labs. AI agent-driven. On-chain. Research. Build. Invest.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{title}</title>
+    <link rel="canonical" href={`${site.url}/tuba-labs/`} />
+  </head>
+  <body class="tuba-page">
+    <a class="tuba-skip" href="#main">跳到正文</a>
+    <header class="tuba-header">
+      <div class="tuba-container tuba-header-inner">
+        <a class="tuba-wordmark" href="#main" aria-label="Tuba Labs 首页"><i aria-hidden="true"></i>Tuba <span>Labs</span></a>
+        <a class="tuba-contact" href={`mailto:${site.email}`}>Get in touch <span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+    <main class="tuba-container tuba-main" id="main" tabindex="-1" data-tuba-motion>
+      <slot />
+    </main>
+    <footer class="tuba-footer">
+      <div class="tuba-container tuba-footer-inner">
+        <p>Tuba Labs</p>
+        <nav aria-label="联系与社交">
+          <a href={site.url}>Jv / jvyin <span aria-hidden="true">↗</span></a>
+          <a href="https://x.com/jvyincom" target="_blank" rel="noopener noreferrer">X <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

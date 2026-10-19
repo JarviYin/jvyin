@@ -1,0 +1,5 @@
+---
+interface Props { title:string; href:string; desc:string; eyebrow?:string; }
+const {title,href,desc,eyebrow='Research'}=Astro.props; const external=href.startsWith('http');
+---
+<a class="research-card" href={href} target={external?'_blank':undefined} rel={external?'noopener noreferrer':undefined}><span class="research-card-type">{eyebrow}</span><div><h3>{title}</h3><p>{desc}</p></div><span class="research-card-arrow" aria-hidden="true">→</span></a>

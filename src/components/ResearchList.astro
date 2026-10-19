@@ -1,0 +1,7 @@
+---
+import ResearchCard from './ResearchCard.astro';
+interface ResearchItem { title:string; href:string; desc:string; eyebrow?:string; }
+interface Props { items:ResearchItem[]; }
+const {items}=Astro.props;
+---
+<div class="research-list">{items.map(item=><ResearchCard {...item} />)}</div>

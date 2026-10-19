@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-10-19T03:31:08.179Z",
+  "verifier": "macOS Vision VNDetectBarcodesRequest",
+  "assets": [
+    {
+      "id": "001",
+      "file": "/share/001.png",
+      "url": "https://jvyin.com/newsletter/001/"
+    },
+    {
+      "id": "002",
+      "file": "/share/002.png",
+      "url": "https://jvyin.com/newsletter/002/"
+    },
+    {
+      "id": "003",
+      "file": "/share/003.png",
+      "url": "https://jvyin.com/newsletter/003/"
+    },
+    {
+      "id": "004",
+      "file": "/share/004.png",
+      "url": "https://jvyin.com/newsletter/004/"
+    },
+    {
+      "id": "005",
+      "file": "/share/005.png",
+      "url": "https://jvyin.com/newsletter/005/"
+    },
+    {
+      "id": "006",
+      "file": "/share/006.png",
+      "url": "https://jvyin.com/newsletter/006/"
+    },
+    {
+      "id": "007",
+      "file": "/share/007.png",
+      "url": "https://jvyin.com/newsletter/007/"
+    },
+    {
+      "id": "008",
+      "file": "/share/008.png",
+      "url": "https://jvyin.com/newsletter/008/"
+    },
+    {
+      "id": "009",
+      "file": "/share/009.png",
+      "url": "https://jvyin.com/newsletter/009/"
+    },
+    {
+      "id": "agents",
+      "file": "/share/agents.png",
+      "url": "https://jvyin.com/agents/"
+    },
+    {
+      "id": "onchain-finance",
+      "file": "/share/onchain-finance.png",
+      "url": "https://jvyin.com/onchain-finance/"
+    },
+    {
+      "id": "hyperliquid-builders",
+      "file": "/share/hyperliquid-builders.png",
+      "url": "https://jvyin.com/research/hyperliquid-builders/"
+    }
+  ]
+}

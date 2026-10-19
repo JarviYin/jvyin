@@ -1,0 +1,5 @@
+---
+import { site } from '../site.config';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer"><div class="footer-grid"><p>© {year} {site.name}</p><nav class="footer-links" aria-label="页脚链接"><a href="/rss.xml">RSS</a><a href={`mailto:${site.email}`}>Email</a><a href="/newsletter/">Newsletter</a></nav><p>Research · Build · Invest</p></div></footer>

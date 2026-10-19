@@ -1,0 +1,45 @@
+---
+import { site } from '../site.config';
+const path = Astro.url.pathname;
+const links = [
+  { href: '/', label: 'Overview' },
+  { href: '/agents/', label: 'AI agents' },
+  { href: '/onchain-finance/', label: '链上金融' },
+  { href: '/research/', label: 'Research' },
+  { href: '/newsletter/', label: 'Newsletter' },
+  { href: '/products/', label: 'Products' },
+];
+const active = (href: string) => href === '/' ? path === '/' : path.startsWith(href);
+---
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-brand-row">
+      <a class="brand" href="/" aria-label={`${site.title} 首页`}>jvyin<svg class="brand-mark" viewBox="0 0 20 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="m10 2 8 5v10l-8 5-8-5V7Z M2 7l8 5 8-5 M10 12v10" /></svg></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav"><span class="nav-toggle-icon" aria-hidden="true"></span><span>Menu</span></button>
+    </div>
+    <nav class="nav" id="site-nav" aria-label="主导航">
+      {links.map(link => <a href={link.href} aria-current={active(link.href) ? 'page' : undefined} class={active(link.href) ? 'active' : undefined}>{link.label}</a>)}
+      <div class="nav-utilities"><a href="/rss.xml">RSS</a><a href="https://x.com/jvyincom" target="_blank" rel="noopener noreferrer">X ↗</a></div>
+    </nav>
+  </div>
+  <noscript><style>@media(max-width:900px){.site-header{position:relative}.nav{display:grid!important;position:static!important}.header-inner{display:block;height:auto}}</style></noscript>
+</header>
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
+  const nav = document.querySelector<HTMLElement>('.nav');
+  function close() {
+    toggle?.setAttribute('aria-expanded', 'false');
+    nav?.classList.remove('is-open');
+  }
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    nav?.classList.toggle('is-open', !open);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
+      close();
+      toggle.focus();
+    }
+  });
+</script>

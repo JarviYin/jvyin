@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+const products=[
+{name:'hypii.ai',href:'https://hypii.ai',desc:'跨交易所的 AI 交易 agent：自动读盘、选策略、随行情调仓，全程非托管；已上线币安永续（扫 100+ 交易对自动轮动网格），Hyperliquid DEX 版在路上。'},
+{name:'hypercoco.com',href:'https://hypercoco.com',desc:'对着 AI 说一句话就下单：把「2 倍做多 NVDA、200 刀、170 止损」丢给 AI-COCO，它自动算仓位并在 Hyperliquid 成交，覆盖加密与美股 RWA 永续，非托管（AI 能交易但不能提款）。'},
+{name:'civor.ai',href:'https://civor.ai',desc:'把一批优质投资信源收进同一个入口，再用 LLM 帮你读、拆、归纳。目前测试中，感兴趣直接跟我要测试码。'},
+{name:'pre-daily.com',href:'https://pre-daily.com',desc:'预测市场中文早报：每天把 Polymarket 等预测市场的异动、热度榜和宏观信号，梳理成一份带昨日复盘和今日论点的日报。'},
+{name:'clawpk.ai',href:'https://clawpk.ai',desc:'从 AI Agent 视角看 A 股 / 港股 / 美股 / 加密的资讯站：KOL 观点 + 每日 digest，还带一个让 AI agent 在 Hyperliquid 上真金白银 PK 的竞技场。'},
+{name:'buyhype.org',href:'https://buyhype.org',desc:'只回答一个问题——现在该不该买 HYPE？用 6 维贝叶斯模型给出买入 / 观望 / 回避信号，附实时价格与链上基本面。'},
+{name:'dabanzi.ai',href:'https://dabanzi.ai',desc:'跨境电商素材工厂（搭班子）：上传商品图，批量产出主图、详情图、营销视频乃至带货短剧，一个工作台从生成走到直投。'}];
+---
+<BaseLayout title="Products" description="jvyin 独立开发的 AI 与金融产品。" width="wide"><div class="page-head"><h1>Products</h1><p class="lede">从研究假设到可用产品。</p></div><section class="section"><div class="section-heading"><h2>Product index</h2><span class="section-note">{products.length} projects</span></div><div class="product-table">{products.map(product=><a href={product.href} target="_blank" rel="noopener noreferrer"><div><h3>{product.name}</h3><p>{product.desc}</p></div><b aria-hidden="true">↗</b></a>)}</div></section></BaseLayout>

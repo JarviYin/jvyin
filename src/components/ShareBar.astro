@@ -1,0 +1,80 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  url: string;
+  image?: string;
+  id?: string;
+  view?: boolean;
+  source?: string;
+  date?: string;
+  footer?: boolean;
+  compact?: boolean;
+}
+
+const { title, description, url, image, id, view = false, source, date, footer = false, compact = false } = Astro.props;
+const payload = JSON.stringify({ title, description, url, image, id, view, source, date });
+const qr = id ? `/share/${id}.png` : undefined;
+const dialogTitleId = `share-dialog-title-${id ?? 'page'}-${footer ? 'footer' : 'top'}`;
+---
+
+<section class:list={['share-bar', { 'share-bar--footer': footer, 'share-bar--compact': compact }]} data-share-bar data-share-payload={payload} aria-label="分享此页">
+  <div class="share-bar__actions">
+    {compact ? <button type="button" class="share-bar__button" data-share-action="open">分享</button> : <>
+      <button type="button" class="share-bar__button" data-share-action="native">系统分享</button>
+      <button type="button" class="share-bar__button" data-share-action="copy">复制链接</button>
+      <button type="button" class="share-bar__button" data-share-action="open">更多方式</button>
+    </>}
+  </div>
+  <p class="share-bar__status" data-share-status aria-live="polite"></p>
+
+  <dialog class="share-dialog" aria-labelledby={dialogTitleId}>
+    <div class="share-dialog__header">
+      <h2 id={dialogTitleId}>分享这篇内容</h2>
+      <button type="button" class="share-dialog__close" data-share-action="close" data-share-close aria-label="关闭分享面板">×</button>
+    </div>
+    <p class="share-dialog__title">{title}</p>
+    <p class="share-dialog__status" data-share-dialog-status aria-live="polite"></p>
+    <div class="share-dialog__choices">
+      <button type="button" data-share-action="native">系统分享</button>
+      <button type="button" data-share-action="x">分享到 X</button>
+      <button type="button" data-share-action="linkedin">分享到 LinkedIn</button>
+      <button type="button" data-share-action="telegram">分享到 Telegram</button>
+      <button type="button" data-share-action="copy">复制链接</button>
+      <button type="button" data-share-action="poster">下载分享卡片</button>
+    </div>
+    {qr && <div class="share-dialog__wechat"><img src={qr} alt={`扫码打开：${title}`} width="220" height="220" /><p>微信扫码打开公开页面；筛选视图请复制链接。</p></div>}
+    <a class="share-dialog__canonical" data-share-canonical href={url}>打开公开链接</a>
+  </dialog>
+</section>
+
+<script>
+  import { mountShareBars } from '../scripts/share';
+  mountShareBars();
+</script>
+
+<style>
+  .share-bar { align-items:center; border-block:1px solid var(--border); display:flex; font-family:var(--font-sans); gap:.75rem; justify-content:space-between; margin:1.25rem 0; padding:.65rem 0; }
+  .share-bar--footer { margin-top:2rem; }
+  .share-bar--compact { border:0; margin:0; padding:0; }
+  .share-bar__actions { display:flex; flex-wrap:wrap; gap:.45rem; }
+  .share-bar button { appearance:none; background:var(--bg); border:1px solid var(--border); border-radius:2px; color:var(--fg); cursor:pointer; font:500 .8125rem/1.2 var(--font-sans); min-height:34px; padding:.45rem .7rem; }
+  .share-bar button:hover { background:var(--hover); border-color:var(--accent); color:var(--accent); }
+  .share-bar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .share-bar__status { color:var(--muted); font-size:.75rem; line-height:1.45; min-height:1em; text-align:right; }
+  .share-dialog { background:var(--surface); border:1px solid var(--border); border-radius:2px; box-shadow:none; color:var(--fg); padding:1.1rem; width:min(28rem, calc(100vw - 2rem)); max-height:calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; }
+  .share-dialog::backdrop { background:color-mix(in srgb, var(--fg) 48%, transparent); }
+  .share-dialog__header { align-items:center; border-bottom:1px solid var(--border); display:flex; gap:1rem; justify-content:space-between; padding-bottom:.7rem; }
+  .share-dialog h2 { font-family:var(--font-sans); font-size:1rem; font-weight:650; letter-spacing:-.01em; }
+  .share-dialog__close { font-size:1.3rem !important; line-height:1 !important; min-height:36px; min-width:36px; padding:.1rem .45rem !important; }
+  .share-dialog__title { color:var(--muted); font-size:.875rem; line-height:1.55; margin:.9rem 0; }
+  .share-dialog__status { color:var(--muted); font-size:13px; line-height:1.6; margin:8px 0; }
+  .share-dialog__status:empty { display:none; }
+  .share-dialog__choices { display:grid; gap:.5rem; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .share-dialog__choices button { background:var(--bg); min-height:40px; padding:.65rem .7rem; text-align:left; }
+  .share-dialog__wechat { border-top:1px solid var(--border); color:var(--muted); font-size:.75rem; margin-top:1rem; padding-top:1rem; text-align:center; }
+  .share-dialog__wechat img { background:#fff; margin:0 auto .35rem; max-width:156px; }
+  .share-dialog__canonical { color:var(--muted); display:inline-block; font-size:.75rem; margin-top:1rem; }
+  @media (max-width: 900px) { .share-bar button { min-height:44px; }.share-dialog__close { min-width:44px; } }
+  @media (max-width: 480px) { .share-bar:not(.share-bar--compact) { align-items:flex-start; flex-direction:column; } .share-bar__status { text-align:left; } .share-bar__actions { width:100%; } .share-bar__actions button { flex:1; } .share-bar--compact .share-bar__actions { width:auto; } .share-dialog { border-radius:2px 2px 0 0; margin:auto 0 0; max-width:none; width:100vw; } .share-dialog__choices button { min-height:44px; } }
+</style>

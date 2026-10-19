@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'jvyin.com static site: S3 + CloudFront + Route 53'
+
+Parameters:
+  CertificateArn:
+    Type: String
+    Description: ACM 证书 ARN（us-east-1，覆盖 jvyin.com 和 www.jvyin.com）
+  ApiOriginDomain:
+    Type: String
+    Default: ''
+    Description: Newsletter API 的 execute-api 域名（/api/* 转发目标）
+
+Conditions:
+  HasApi: !Not [!Equals [!Ref ApiOriginDomain, '']]
+
+Resources:
+  # ---------- S3 ----------
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: jvyin.com
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub '${SiteBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: jvyin-site-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ---------- 安全响应头 ----------
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: jvyin-security-headers
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          XSSProtection:
+            Protection: true
+            ModeBlock: true
+            Override: true
+
+  # ---------- www → 裸域 301 ----------
+  WwwRedirectFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: jvyin-www-redirect
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Redirect www.jvyin.com to jvyin.com
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var host = (request.headers.host && request.headers.host.value) || '';
+
+          // www → 裸域 301（保留查询串）
+          if (host.toLowerCase().startsWith('www.')) {
+            var qs = '';
+            if (request.querystring) {
+              qs = Object.keys(request.querystring).map(function (k) {
+                var v = request.querystring[k].value;
+                return k + (v ? '=' + v : '');
+              }).join('&');
+              if (qs) qs = '?' + qs;
+            }
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: { location: { value: 'https://' + host.slice(4) + request.uri + qs } }
+            };
+          }
+
+          // Keep generated issue pages and their share metadata; retain the API shell for other issues.
+          var m = request.uri.match(/^\/newsletter\/(\d+)\/?$/);
+          var staticIssues = ['001', '002', '003', '004', '005', '006', '007', '008', '009'];
+          if (m && staticIssues.indexOf(m[1]) === -1) {
+            request.uri = '/nl-issue/index.html';
+            return request;
+          }
+
+          // 目录路径补 index.html（S3 静态站）：无扩展名的路径都按目录处理
+          if (!request.uri.startsWith('/api/')) {
+            var seg = request.uri.split('/').pop();
+            if (request.uri.endsWith('/') || seg.indexOf('.') === -1) {
+              if (!request.uri.endsWith('/')) request.uri += '/';
+              request.uri += 'index.html';
+            }
+          }
+          return request;
+        }
+
+  # ---------- CloudFront ----------
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - jvyin.com
+          - www.jvyin.com
+        Comment: jvyin.com site
+        Enabled: true
+        PriceClass: PriceClass_100
+        HttpVersion: http2and3
+        DefaultRootObject: index.html
+        Origins:
+          - Id: s3-origin
+            DomainName: !Sub '${SiteBucket}.s3.us-east-1.amazonaws.com'
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+          - !If
+            - HasApi
+            - Id: api-origin
+              DomainName: !Ref ApiOriginDomain
+              CustomOriginConfig:
+                OriginProtocolPolicy: https-only
+                OriginSSLProtocols: [TLSv1.2]
+            - !Ref AWS::NoValue
+        DefaultCacheBehavior:
+          TargetOriginId: s3-origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6   # CachingOptimized
+          ResponseHeadersPolicyId: !Ref SecurityHeaders
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt WwwRedirectFunction.FunctionMetadata.FunctionARN
+        CacheBehaviors: !If
+          - HasApi
+          - - PathPattern: /api/*
+              TargetOriginId: api-origin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [GET, HEAD, OPTIONS, POST, PUT, DELETE, PATCH]
+              CachedMethods: [GET, HEAD, OPTIONS]
+              CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad    # CachingDisabled
+              OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
+              ResponseHeadersPolicyId: !Ref SecurityHeaders
+          - !Ref AWS::NoValue
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+      Tags:
+        - Key: Name
+          Value: jvyin-site
+
+  # ---------- Route 53 ----------
+  ApexA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z07178802NZXJVAG1M8HF
+      Name: jvyin.com.
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  ApexAAAA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z07178802NZXJVAG1M8HF
+      Name: jvyin.com.
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  WwwA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z07178802NZXJVAG1M8HF
+      Name: www.jvyin.com.
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+  WwwAAAA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z07178802NZXJVAG1M8HF
+      Name: www.jvyin.com.
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: false
+
+Outputs:
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomain:
+    Value: !GetAtt Distribution.DomainName
+  SiteBucketName:
+    Value: !Ref SiteBucket

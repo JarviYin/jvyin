@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ShareBar from '../../../components/ShareBar.astro';
+import hero from '../../../content/research/hyperliquid-builders-hero.html?raw';
+import body from '../../../content/research/hyperliquid-builders.html?raw';
+import '../../../styles/builders.css';
+
+const title = '死掉的 Hyperliquid 前端';
+const description = '谁在收 builder fee，收了几个 bps，费用归谁，以及前端回落背后的不同路径。';
+---
+<BaseLayout title={title} description={description} width="wide" canonical="/research/hyperliquid-builders/" image="/share/og/hyperliquid-builders.png" type="article" publishedTime="2026-10-18">
+  <article class="builders-report" id="top">
+    <div class="progress" id="reading-progress" aria-hidden="true"></div>
+    <a class="back-top" href="#top" aria-label="返回顶部">↑</a>
+    <Fragment set:html={hero} />
+    <ShareBar title={title} description={description} url="https://jvyin.com/research/hyperliquid-builders/" id="hyperliquid-builders" source="jvyin.com" date="2026-10-18" />
+    <Fragment set:html={body} />
+  </article>
+</BaseLayout>
+<script>
+  import '../../../scripts/builders.js';
+</script>

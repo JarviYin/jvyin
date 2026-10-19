@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "attemptedAt": "2026-10-19T03:24:35.428432Z",
+  "sources": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "url": "https://api.github.com/repos/anthropics/claude-code",
+      "kind": "repo",
+      "items": [],
+      "observedAt": null,
+      "status": "unavailable",
+      "error": "URLError",
+      "attemptedAt": "2026-10-19T03:24:35.428432Z"
+    },
+    {
+      "id": "claude-releases",
+      "name": "Claude Code",
+      "url": "https://api.github.com/repos/anthropics/claude-code/releases?per_page=8",
+      "kind": "releases",
+      "items": [],
+      "observedAt": null,
+      "status": "unavailable",
+      "error": "URLError",
+      "attemptedAt": "2026-10-19T03:24:35.428432Z"
+    },
+    {
+      "id": "codex",
+      "name": "Codex CLI",
+      "url": "https://api.github.com/repos/openai/codex",
+      "kind": "repo",
+      "items": [],
+      "observedAt": null,
+      "status": "unavailable",
+      "error": "URLError",
+      "attemptedAt": "2026-10-19T03:24:35.428432Z"
+    },
+    {
+      "id": "codex-releases",
+      "name": "Codex CLI",
+      "url": "https://api.github.com/repos/openai/codex/releases?per_page=8",
+      "kind": "releases",
+      "items": [],
+      "observedAt": null,
+      "status": "unavailable",
+      "error": "URLError",
+      "attemptedAt": "2026-10-19T03:24:35.428432Z"
+    },
+    {
+      "id": "openai-news",
+      "name": "OpenAI News",
+      "url": "https://openai.com/news/rss.xml",
+      "kind": "rss",
+      "items": [],
+      "observedAt": null,
+      "status": "unavailable",
+      "error": "URLError",
+      "attemptedAt": "2026-10-19T03:24:35.428432Z"
+    }
+  ],
+  "collector": "scripts/refresh-ai-agents.py",
+  "scheduled": false
+}

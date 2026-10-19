@@ -1,0 +1,327 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'jvyin newsletter backend: DynamoDB + Lambda + HTTP API + SNS bounce handling'
+
+Resources:
+  # ---------- 订阅数据表 ----------
+  SubscribersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: jvyin-subscribers
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: token-index
+          KeySchema:
+            - AttributeName: token
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  # ---------- Newsletter 期数内容表 ----------
+  IssuesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: jvyin-issues
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # ---------- 角色 ----------
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: jvyin-newsletter-api-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: api-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt SubscribersTable.Arn
+                  - !Join ['', [!GetAtt SubscribersTable.Arn, '/index/*']]
+                  - !GetAtt IssuesTable.Arn
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendBulkEmail
+                  - ses:SendTemplatedEmail
+                  - ses:SendBulkTemplatedEmail
+                  - ses:CreateContact
+                  - ses:CreateEmailTemplate
+                  - ses:UpdateEmailTemplate
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jvyin/admin/*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+
+  EventsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: jvyin-newsletter-events-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: events-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt SubscribersTable.Arn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+
+  # ---------- Lambda ----------
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: jvyin-newsletter-api
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt ApiRole.Arn
+      Timeout: 15
+      MemorySize: 256
+      Code: ../dist/aws/api.zip
+      Environment:
+        Variables:
+          TABLE: !Ref SubscribersTable
+          ISSUES_TABLE: !Ref IssuesTable
+          FROM: 'jvyin <newsletter@jvyin.com>'
+          REPLY_TO: 'jmyjw119@gmail.com'
+          SITE_URL: 'https://jvyin.com'
+          ARCHIVE_URL: 'https://jvyin.com/newsletter/'
+          CONTACT_LIST: 'jvyin-newsletter'
+          EMAIL_TEMPLATE: 'jvyin-newsletter'
+
+  EventsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: jvyin-newsletter-events
+      Runtime: nodejs22.x
+      Handler: index.handler
+      Role: !GetAtt EventsRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Code: ../dist/aws/events.zip
+      Environment:
+        Variables:
+          TABLE: !Ref SubscribersTable
+
+  # ---------- HTTP API ----------
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: jvyin-newsletter-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - 'http://localhost:4321'
+          - 'https://jvyin.com'
+          - 'https://www.jvyin.com'
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+          - authorization
+        MaxAge: 3600
+
+  ApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiFunction.Arn}/invocations'
+      PayloadFormatVersion: '2.0'
+
+  SubscribeRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /api/subscribe'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  ConfirmRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/confirm'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  UnsubscribeRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /api/unsubscribe'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  UnsubscribeGetRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/unsubscribe'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  AdminLoginRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /api/admin/login'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  AdminIssuesRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/admin/issues'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  AdminIssueRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'PUT /api/admin/issues/{id}'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  AdminPublishRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /api/admin/issues/{id}/publish'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  AdminSubscribersRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/admin/subscribers'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  PublicIssuesRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/newsletters'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  PublicIssueRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/newsletters/{id}'
+      Target: !Join ['/', ['integrations', !Ref ApiIntegration]]
+
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: '$default'
+      AutoDeploy: true
+
+  ApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ApiFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*'
+
+  # ---------- 退信/投诉通知 ----------
+  BounceTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: jvyin-newsletter-bounce
+
+  BounceTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref BounceTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ses.amazonaws.com }
+            Action: sns:Publish
+            Resource: !Ref BounceTopic
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/jvyin.com'
+              StringLike:
+                'AWS:SourceAccount': !Ref 'AWS::AccountId'
+
+  BounceTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref BounceTopic
+      Protocol: lambda
+      Endpoint: !GetAtt EventsFunction.Arn
+
+  EventsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref EventsFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref BounceTopic
+
+Outputs:
+  ApiId:
+    Description: HTTP API id
+    Value: !Ref HttpApi
+  ApiEndpoint:
+    Description: HTTP API invoke URL
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  ApiDomain:
+    Description: API Gateway origin domain (for CloudFront)
+    Value: !Sub '${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  TableName:
+    Value: !Ref SubscribersTable
+  BounceTopicArn:
+    Value: !Ref BounceTopic

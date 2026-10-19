@@ -1,0 +1,138 @@
+
+    <nav class="toc" aria-label="文章目录"><a href="#ranking">谁在收</a><a href="#concentration">有多集中</a><a href="#frontends">费率明细</a><a href="#case-studies">前端路径</a><a href="#cost">每单成本</a><a href="#methodology">怎么读</a></nav>
+    <noscript><p class="scope-note">交互图表需要 JavaScript。正文与口径说明可直接阅读；<a href="/research/hyperliquid-builders-data.json">下载带日期的原始聚合快照</a>。</p></noscript>
+
+    <div class="stats" id="stats">
+      <div class="stat"><b id="s-30">—</b><span>过去 30 天前端费用</span></div>
+      <div class="stat"><b id="s-top">—</b><span id="s-top-label">第一名占比</span></div>
+      <div class="stat"><b id="s-five">—</b><span>前五名合计占比</span></div>
+      <div class="stat"><b id="s-quiet">—</b><span>近 30 天费用近乎归零</span></div>
+    </div>
+
+    <div class="dashboard">
+    <section class="panel"><h2 id="ranking">谁在收</h2>
+    <p class="muted" id="rank-line">默认看 30 天。单日波动很大，不拿来下结论。</p>
+    <div class="chips" id="windows"></div>
+    <div class="rank" id="ranks"></div>
+    <div class="spark-wrap" id="spark-wrap" hidden>
+      <p class="note" id="spark-label"></p>
+      <svg class="spark" id="spark" viewBox="0 0 640 120" role="img"></svg>
+    </div>
+
+    </section>
+    <section class="panel"><h2 id="concentration">有多集中</h2>
+    <p id="share-line">数字加载后显示。</p>
+    <div class="share-track" id="share" aria-hidden="true"></div>
+    <div class="legend" id="legend"></div>
+
+    <p class="note" id="cohort-note"></p>
+    <button id="refresh" type="button" class="retry">刷新公开数据 ↻</button>
+    <p class="err" id="err" role="status" hidden></p>
+    </section></div>
+    <h2 id="case-studies">前端路径与机构通道</h2>
+    <p>同一本订单簿，进来的门不一样。下面比较 Based、fomo、Phantom 三条前端路径。费用曲线在你打开这一页时从 DefiLlama 重画，用来看「起来」和「掉下去」是不是同一件事。</p>
+    <div class="panel cases-panel">
+    <p class="note" id="case-note">正在读取 Based、fomo、Phantom 的月度费用…</p>
+    <svg class="spark" id="cases" viewBox="0 0 640 220" role="img" aria-label="三条前端的月度 builder 费用"></svg>
+    <div class="legend" id="case-legend"></div>
+    </div>
+
+    <article class="case">
+      <span class="case-marker">CASE 01</span>
+      <h3><a class="project-link" href="https://app.based.one/" target="_blank" rel="noopener noreferrer">Based</a>：先做交易工具，不是先做钱包</h3>
+      <p>Based 2025 年 7 月上线，走的是交易员工具，不是把永续塞进一个已经有几百万用户的钱包。Pantera 在 2026 年 2 月 23 日领投了 1150 万美元，Coinbase Ventures、Wintermute Ventures、Karatage 跟投。Based 创始人 Edison Lim 当时对 The Block 说：上线八个月，注册用户超过 10 万，月活约 3 万，累计成交约 400 亿美元，收入约 1400 万美元。收入主要是用户通过 Based 在 Hyperliquid 和 Polymarket 交易时的 builder fee，另外还有卡的交换费和会员费。</p>
+      <p>费率选得比钱包低。CoinGecko 用 HyperTracker 在 2026 年 5 月 25 日做的截面里，Based 永续 builder fee 是 0.025%，Phantom 是 0.05%。Based 累计成交 440 亿美元，高于 Phantom 的 394 亿，但累计收入 1510 万美元，低于 Phantom 的 2060 万。人少、客单高：Based 约 4.3 万用户，人均贡献 354 美元；Phantom 约 13.7 万用户，人均 150 美元。Privy 记录过 Based 曾在某段 24 小时里占到全网永续成交的 20%。这是「把会交易的人做深」，不是「把所有人带进来」。</p>
+      <p>它后来掉得很厉害，这件事要分开看。2026 年 10 月 18 日核验的 DefiLlama 永续费用序列，按季加总为：2025 年三季度 692 万美元，四季度 584 万，2026 年一季度 154 万，二季度 76 万，三季度 25 万，四季度截至抓取约 2.3 万美元。Based 自己的费率页写着会把这笔收入变薄的设计：普通永续 builder fee 为 2.5 bps；HIP-3 增长模式市场为 0.2 bps；质押到 Diamond 档可以免掉 builder fee；builder fee 里最多 76% 会分给联盟客。所以「费用掉了」不等于「人走光了」，收取额也不等于平台净收入。累计仍在前排，近 30 天已经掉到几万美元。</p>
+      <p class="src">出处：<a href="https://panteracapital.com/investing-in-based/">Pantera</a> · <a href="https://www.theblock.co/news/deals/2026-02-23-hyperliquid-web3-based-funding-pantera-390809">The Block，2026-02-23</a> · <a href="https://www.coingecko.com/research/publications/top-hyperliquid-builders">CoinGecko / HyperTracker，2026-05-25</a> · <a href="https://basedapp.gitbook.io/docs/based/fees">Based 费率文档</a> · <a href="https://defillama.com/protocol/basedapp">DefiLlama BasedApp</a></p>
+    </article>
+
+    <article class="case">
+      <span class="case-marker">CASE 02</span>
+      <h3><a class="project-link" href="https://fomo.family/" target="_blank" rel="noopener noreferrer">fomo</a>：先有时间线，再接永续</h3>
+      <p>fomo 不是从一张空白的交易终端长出来的。它先是一个社交交易应用：信息流、跟单、观点、排行榜。2025 年 11 月 Benchmark 领投 1700 万美元 A 轮。2026 年 6 月 22 日 Index Ventures 领投 7500 万美元 B 轮，估值 5.5 亿美元，USV 和 Benchmark 继续加。公司当时说，上线大约一年有超过 62.5 万交易者、40 亿美元成交、1.1 亿次社交互动；其中 6.8 万人用 Apple Pay 在 fomo 上完成第一笔买入，大约 2500 万美元。</p>
+      <p>永续是后接上的。2026 年 6 月 11 日，fomo 宣布永续上线，底层是 Hyperliquid 和 Trade.xyz。品种直接覆盖加密、股票、指数、商品，还有 SpaceX 这类上市前永续。产品上没有另做一套社交：信息流、排行榜、观点、主页还是原来的，仓位默认逐仓，手机上第一次给出止盈止损。它自己的说法是：不是 everything app，是一个背后有社交网络的交易应用。</p>
+      <p>费用曲线和 Based 相反。2026 年 10 月 18 日核验的 DefiLlama 永续费用序列，按月为：6 月 13.4 万美元，7 月 18.4 万，8 月 54.9 万，9 月 97.8 万，10 月截至抓取约 81.1 万。累计 builder fee 约 266 万美元。官方基础费率是单边 5 bps，10 月 17 日地址样本则同时出现 1 和 5 bps。产品顺序很清楚：先用信息流和 Apple Pay 降低第一次交易的门槛，再把永续接进同一个应用；费用增长与这条路径一致，但不能只凭费用曲线证明增长原因。</p>
+      <p class="src">出处：<a href="https://fomo.family/blog/perpetuals-now-on-fomo">fomo，2026-06-11</a> · <a href="https://fomo.family/blog">fomo 融资日志</a> · <a href="https://defillama.com/protocol/fomo-perps">DefiLlama fomo Perps</a></p>
+    </article>
+
+    <article class="case">
+      <span class="case-marker">CASE 03</span>
+      <h3><a class="project-link" href="https://pump.fun/" target="_blank" rel="noopener noreferrer">pump.fun</a>：流量已经在手里，订单簿不用自己建</h3>
+      <p>2026 年 10 月 16 日到 17 日，pump.fun 在应用里打开了比特币和以太坊永续。它没有自己做撮合。条款写明：每张永续由 Hyperliquid 创建、撮合、记账和执行，不是 pump.fun。pump.fun 提供的是屏幕。Hyperliquid 这边，比特币最高 40 倍，以太坊最高 25 倍；pump.fun 可以在自己的界面上把杠杆再压低。10 月 17 日更新的官方费率页：pump.fun 收取每笔永续订单最高 10 bps 的 builder fee；进出 Hyperliquid 的桥接转移费另收最高 25 bps，不混进 builder fee。美国、安大略、英国不能用。</p>
+      <p>这和 8 月 26 日它接上 HyperEVM 现货是同一条线：先碰到链，再碰到订单簿。10 月 9 日前后，永续数据已经出现在它的 API 里。解读就一件事。pump.fun 的用户是为了发币和炒币来的，不是为了看资金费率来的。Builder Code 让这份流量可以直接打进 Hyperliquid 上最深的两本账，pump.fun 抽一笔，Hyperliquid 得到订单。前端和场所可以上周还在比收入，这周就变成渠道和场所。费用还没在这张排行里单独冒出来，所以现在只能读产品结构，不能读它已经收了多少。</p>
+      <p class="src">出处：<a href="https://pump.fun/docs/fees">pump.fun 官方费率，2026-10-17</a> · <a href="https://pump.fun/docs/terms-and-conditions">pump.fun 官方条款</a> · <a href="https://www.bankless.com/read/news/pump-fun-adds-leveraged-perps-via-hyperliquid">Bankless，2026-10-16</a> · <a href="https://hyperliquid.gitbook.io/hyperliquid-docs/trading/builder-codes">Hyperliquid builder codes</a></p>
+    </article>
+
+    <article class="case">
+      <span class="case-marker">CASE 04</span>
+      <h3><a class="project-link" href="https://ripple.com/" target="_blank" rel="noopener noreferrer">Ripple Prime</a>：机构不进前端，进的是对手方</h3>
+      <p>2026 年 10 月 15 日，Ripple 宣布 Ripple Prime 支持实物资产永续互换。Virtu 已经在交易。覆盖股票、股指、ETF、金属、能源和外汇，一百多个参考市场，交易和结算 7 天 24 小时。结构要看仔细：客户的对手方是 Ripple Prime，不是 Hyperliquid。这些互换参考的，是 Trade.xyz 在 Hyperliquid 上挂的永续。客户拿到的是价格敞口，不是股票本身。保证金可以和其他资产类别轧差，允许的地区可以用 RLUSD 做抵押。现在从 Ripple Prime 的 BVI 牌照提供，其他地区还没给时间表。</p>
+      <p>这不是又一个 builder。钱包、fomo、pump.fun 卖的是屏幕和流量。Ripple 卖的是牌照、清算、抵押品和单一对手方。Hyperliquid 与 Trade.xyz 在这里是连续报价的参考市场，尤其是传统交易所关门的夜晚和周末。两条门同时开着：零售从已经有用户的应用进来，机构从主经纪商进来。谁都不必先做一个新的交易终端。</p>
+      <p class="src">出处：<a href="https://ripple.com/ripple-press/ripple-launches-support-for-institutions-to-access-real-world-asset-perpetual-swaps/">Ripple，2026-10-15</a></p>
+    </article>
+
+    <h2 id="frontends">点过名的前端 · 谁收、加多少</h2>
+    <p class="muted">点击前端名称可打开官网；趋势按钮查看费用曲线。1 bp = 0.01%，按单边成交名义金额计算；开仓、平仓各收一次。</p>
+    <div class="scope-note"><strong>先分清两种 builder。</strong>Builder Code 是前端逐笔加收的费用，记给订单中的 builder 地址。HIP-3 deployer 负责部署市场并参与市场费用分配。<a class="project-link" href="https://trade.xyz/" target="_blank" rel="noopener noreferrer">trade.xyz</a> 属于后者，也提供前端（<a href="https://docs.trade.xyz/overview/about-trade-xyz">官方说明</a>）；本页已从普通前端排行、总额、集中度和趋势对比中移出，不能把其市场费用当成前端加价。</div>
+    <div class="fee-toolbar"><input class="search" type="search" id="fee-search" aria-label="搜索前端或费率" placeholder="搜索前端、费率或条件…" /><button class="filter-button" data-watch-filter="all" aria-pressed="true" type="button">全部</button><button class="filter-button" data-watch-filter="known" aria-pressed="false" type="button">有成交实测</button><button class="filter-button" data-watch-filter="low" aria-pressed="false" type="button">回落 / 待拆分</button><span id="table-count" class="table-count" aria-live="polite"></span></div>
+    <div class="scroll" tabindex="0" role="region" aria-label="前端费率表，可左右滚动">
+      <table>
+        <caption>费表核验：2026-10-18。实测：2026-10-17 UTC，Σ builderFee ÷ Σ |px × sz| × 10,000；是该地址单日样本的成交量加权值，不是所有账户的统一报价。手机可左右滑动。</caption>
+        <thead>
+          <tr><th scope="col">前端</th><th scope="col">谁收取</th><th scope="col">附加费率 / 公开规则</th><th scope="col">单日实测</th><th scope="col">30 天收取额</th><th scope="col">累计收取额</th><th scope="col">状态</th></tr>
+        </thead>
+        <tbody id="watch"></tbody>
+      </table>
+    </div>
+
+
+    <section class="panel" style="margin-top:2rem">
+      <h2 id="cost">几个 bps，落到一笔订单是多少钱</h2>
+      <div class="calculator"><div>
+        <label for="order-size">单边成交名义金额 <output id="order-output" for="order-size"></output><input id="order-size" type="range" min="1000" max="100000" step="1000" value="10000" /></label>
+        <label for="fee-bps">前端附加费率 <output id="bps-output" for="fee-bps"></output><input id="fee-bps" type="range" min="0" max="10" step="0.5" value="5" /></label>
+      </div><div><span class="note">这笔订单额外付给前端</span><p class="cost-value" id="extra-cost" aria-live="polite">$5.00</p><div class="cost-split" aria-hidden="true"><span id="protocol-split"></span><span id="builder-split"></span></div><p class="note" id="cost-explanation"></p></div></div>
+      <p class="note">灰色为底层费，绿色为前端附加费。底层以普通加密永续基础 taker 4.5 bps 作演示；HIP-3、成长模式、挂单/吃单、成交量和质押折扣会改变实际费用。此处不含 funding、滑点、桥接及其他成本，成交名义金额也不等于保证金。</p>
+    </section>
+    <h2 id="decline" class="read-section">停掉的，各有各的死法</h2>
+    <p class="read-section">上面表格里标成「近乎归零」或「明显回落」的，不是同一种失败。费用数字以这一页加载时的 DefiLlama 为准。路径里有一段是我自己看到的，会标明。</p>
+
+    <article class="case">
+      <span class="case-marker">CASE 05</span>
+      <h3><a class="project-link" href="https://www.uxuy.com/" target="_blank" rel="noopener noreferrer">UXUY</a>：Hyperliquid 前端，然后自建流动性</h3>
+      <p>UXUY 不是没流量的小终端。它是 Binance Labs 孵化过的钱包和交易入口。2025 年 7 月，它自己的稿子说已经接上 Hyperliquid，做成一个交易网关，并称超过 10 万用户通过它做过链上衍生品。2026 年 10 月 18 日的 DefiLlama 快照中，UXUY 的 Hyperliquid 永续 builder fee 累计约 3.4 万美元，近 30 天约 0.01 美元，接近零。人可以很多，从这本订单簿上收取的费用可以很少。</p>
+      <p>2026 年 7 月 30 日，UXUY 宣布自己的稳定币永续协议，部署在 BNB Chain，用订单簿而不是 AMM，流动性先由 ULP 提供，再用自动化策略挂单。稿子把这件事写成：从应用层走到协议层，从 Hyperliquid 的门，变成自己的基础设施。公开稿没有写中间那一站。我看到的路径是三步：先做 Hyperliquid builder，再试 Orderly 那种共享订单簿，最后自己做流动性。能在这张费用表中对上的，只有 Hyperliquid builder 这一段；业务迁移是费用回落的一种解释，尚不能据此证明所有订单都已迁出。自建协议的其他收入也不会自动体现在这项费用里。</p>
+      <p class="src">出处：<a href="https://blog.uxuy.com/uxuy-officially-launches-stablecoin-native-perp-dex-protocol-to-build-next-generation-on-chain-d1a6db10550a">UXUY，2026-07-30</a> · <a href="https://defillama.com/protocol/uxuy-perps">DefiLlama Uxuy Perps</a>。Orderly 这一段是我看到的路径，不在他们的发布稿里。</p>
+    </article>
+
+    <article class="case">
+      <span class="case-marker">CASE 06</span>
+      <h3><a class="project-link" href="https://hypersignals.ai/" target="_blank" rel="noopener noreferrer">HyperSignals</a>：社区很热，订单没有留下来</h3>
+      <p>HyperSignals 在迪拜。产品是信号和跟单：看聪明钱的仓位，复制交易，后面做成自己的 AI 组合管理。他们的账号写过，V1 是跟着聪明钱，V2 是你自己的 AI portfolio manager，一组 agent 管永续、现货和再平衡。招聘页把团队放在迪拜，做的是实盘仓位、镜像下单和低延迟执行，这个岗位后来已经不招了。</p>
+      <p>我去年在迪拜参加过他们的线下社区。当时人很多，讨论很热，后面还在做 AI trading agent。社区热度不能自动证明订单留存。DefiLlama 方法说明中，HyperSignals 收入涉及 Hyperliquid 与 Extended，尚不能把约 21 万美元的累计值全当成 Hyperliquid builder fee，所以已移出可比统计。即使某项费用近 30 天为零，也不能单凭这一点证明 agent 停止交易，或者证明转向 agent 导致费用中断。</p>
+      <p class="src">出处：<a href="https://blog.hypersignals.ai/how-hypersignals-turns-crypto-noise-into-alpha-5f1ed525ba61">HyperSignals 博客</a> · <a href="https://jobs.outlierventures.io/companies/biconomy/jobs/63897592-cto-hypersignals">迪拜 CTO 招聘，已停止</a> · <a href="https://defillama.com/protocol/hypersignals">DefiLlama HyperSignals</a>。线下社区是我自己参加的。</p>
+    </article>
+
+    <article class="case">
+      <span class="case-marker">CASE 07</span>
+      <h3><a class="project-link" href="https://supercexy.com/" target="_blank" rel="noopener noreferrer">Supercexy</a>：CEX 手感做出来了，用户不是 CEX 的</h3>
+      <p>Supercexy 是 Chris Ling 一个人做起来的。他在马来西亚，华语开发者，也在 No Limit Holdings。他自己的简介写着：完全自举的 Hyperliquid 交易前端，对标 CEX 体验，有 chase limit、移动止损、冰山单。前三个月靠自然增长做到大约 15 亿美元成交、超过 30 万美元收入。2026 年起，这件事被他标成 deprioritized。DefiLlama 现在的累计 builder fee 大约 22.7 万美元，累计永续名义成交大约 11 亿美元，近 30 天费用只剩几百美元。</p>
+      <p>他后来在公开场合说过，自己把 Supercexy 做到过 Phantom 日成交旁边，但真正佩服的是那些不靠加密推特、在外面就拥有用户的前端。这句话就是死因。CEX 体验是执行层：订单类型、速度、图表。CEX 的护城河是开户、入金和已经在里面的人。一个开发者可以把执行层做完，买不来那批人。体验对齐了，分销没有对齐，builder fee 就会在产品还活着的时候先停。</p>
+      <p class="src">出处：<a href="https://www.linkedin.com/in/chris-ling-5a7963209">Chris Ling</a> · <a href="https://defillama.com/protocol/supercexy">DefiLlama Supercexy</a></p>
+    </article>
+
+    <article class="case">
+      <span class="case-marker">CASE 08</span>
+      <h3>其余几个，死在「又一个终端」</h3>
+      <p>Minara 的方法说明同时涉及 Hyperliquid 与 Lighter，未完成场所拆分前，不再把约 78 万美元的合计费用叫作 Hyperliquid builder fee。Okto 的永续前端累计收取约 89 万美元，近 30 天约 210 美元；Dexari 近 30 天约 7300 美元，Senpi 约 5200 美元，均以 2026 年 10 月 18 日快照为准。费用规模说明通过这些地址变现的订单有限；能否归因于用户不足、费率减免或业务迁移，还需要成交量和用户留存数据。</p>
+      <p class="src">费用见上面的表，来源 DefiLlama。Minara、Okto、Dexari、Senpi 的产品细节我不展开，避免把没核对过的故事写进去。</p>
+    </article>
+
+    <h2 id="conclusion" class="read-section">总结</h2>
+    <p class="read-section">Builder fee 量的是分销，不是产品完成度。还在收的，是本来就有门的人：Phantom、MetaMask、Trust 有钱包，fomo 有时间线和第一次买入。trade.xyz 则是 HIP-3 市场部署方，收入另计，不能用来证明前端分销。Based 证明过另一条路，把会交易的人做深，费率放低，成交可以超过钱包。那条路的费用高峰在 2025 年秋，现在按 30 天看已经掉下去了。</p>
+    <p class="read-section">回落也不是同一种情况。UXUY 宣布自建协议，同时其 Hyperliquid builder fee 接近零；业务迁移与费用回落之间仍需更多订单证据。HyperSignals 与 Minara 先要拆清场所口径。Supercexy 的 CEX 体验没有自动变成持续的费用。产品完成度、用户留存、费率和最终留给平台的净收入，是四件不同的事。</p>
+    <p class="read-section">所以这个月的两件新事，pump.fun 和 Ripple Prime，并不是第四种死法的反例。pump.fun 带来的是已经在发币和炒币的人。Ripple 带来的是牌照、抵押品和 Virtu 这种机构，客户甚至不打开 Hyperliquid。两条都是带着现成的人进来。还想从零做一个「更好用的永续终端」，再靠 builder fee 养活自己，这张表已经给过答案。</p>
+
+    <h2 id="methodology" class="read-section">怎么读</h2>
+    <p class="note read-section">jvyin · Research · 个人分享，不是投资建议。</p>
+    <p class="note read-section">收取额来自 <a href="https://defillama.com/fees/hyperliquid">DefiLlama</a>。Interface 标签不足以证明是 Builder Code，本页再按方法说明剔除 HIP-3 部署市场、现货、HIP-4 和未拆清的跨场所项目；表中 Dreamcash 仅指 Interface，不含 Markets。费率样本来自 <a href="https://hyperliquid.gitbook.io/hyperliquid-docs/trading/builder-codes">Hyperliquid 官方公开 builder fills</a>，地址归属参考 DefiLlama 适配器，保留部分地址不可读、小样本及文档冲突。费用近乎归零不代表项目关闭，也不代表其他业务没有收入。抓取时间不等于所有数据的统一观测时间；刷新失败会标明使用本地快照。</p>

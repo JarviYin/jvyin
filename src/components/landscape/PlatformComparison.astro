@@ -1,0 +1,37 @@
+---
+const platforms = [
+  {name:'OKX',tag:'ONCHAIN WALLET + TOOLS',source:'https://www.okx.com/en-us/learn/agentic-wallet',docs:'https://web3.okx.com/onchainos',
+   execution:'Agentic Wallet / Onchain OS 提供 MCP、Skills 与 API，连接链上钱包操作、DEX 聚合、市场数据和风险检测。',
+   authorization:'官方披露 TEE 管理密钥、交易模拟和风险阻断。钱包操作与 OKX CEX 账户是不同执行面，仍需核验具体工具权限和审批流程。',
+   payments:'Onchain OS 提供 x402 等机器支付接口；接口覆盖与平台基础设施流量不构成 agent 支付采用量证明。',
+   limit:'没有在本次核验中取得独立归因的 agent 成交量或支付额。'},
+  {name:'Binance',tag:'ACCOUNT EXECUTION + ECOSYSTEM',source:'https://www.binance.com/en/blog/ecosystem/5991233187660196794',docs:'https://www.binance.com/en/square/post/357969142952308',
+   execution:'Agent OS 的 MCP 核心是 CEX 行情与获授权交易。链上与支付通过其它 APIs、Wallet AgenticHub 或 Skills 接入，不能混写为 MCP 已直接覆盖。',
+   authorization:'Agentic 子账户隔离、粒度授权与断开控制；主账户只读，MCP 不提供对外提现权限。产品与地区资格仍适用。',
+   payments:'生态包含支付相关工具与接口。CEX 成交量、交易所用户数与链上 agent 支付是不同统计范围。',
+   limit:'未核验到单独披露、可复核的链上 agent 交易或支付规模。'},
+  {name:'Coinbase',tag:'CEX / WALLET / DEVELOPER',source:'https://docs.cdp.coinbase.com/ai-agents/overview',docs:'https://docs.cdp.coinbase.com/ai-agents/coinbase-for-agents/coinbase-mcp',
+   execution:'Coinbase MCP 连接托管交易账户；Wallet MCP 连接自托管钱包与 DeFi；CDP MCP 面向开发者服务端钱包、链上数据与支付。',
+   authorization:'Coinbase MCP 在授权的 portfolio 范围操作；Wallet MCP 文档声明每次写操作需钱包审批。三种入口的权限和密钥模型分别核验。',
+   payments:'x402 可用于研究 / 数据付款。Coinbase MCP 文档的单笔 5 USDC 上限，不等于每会话或每日预算；结算后不可逆。',
+   limit:'历史 AgentKit 演示、测试网交易与当前零售 agent 采用不可混为一谈。'},
+];
+---
+<div class="ls-platform-comparison">
+  <div class="ls-platform-tabs" role="group" aria-label="查看平台能力维度"><button type="button" data-platform-tab="execution" aria-pressed="true">执行范围</button><button type="button" data-platform-tab="authorization" aria-pressed="false">权限与隔离</button><button type="button" data-platform-tab="payments" aria-pressed="false">Agentic pay</button></div>
+  <div class="ls-table-scroll" tabindex="0" role="region" aria-label="平台能力对比，可左右滚动"><table class="ls-platforms"><thead><tr><th scope="col">平台</th><th scope="col">能力范围</th><th scope="col">证据与限制</th></tr></thead><tbody>{platforms.map(platform=><tr><th scope="row"><strong>{platform.name}</strong><small>{platform.tag}</small></th><td><div data-platform-content="execution">{platform.execution}</div><div data-platform-content="authorization" hidden>{platform.authorization}</div><div data-platform-content="payments" hidden>{platform.payments}</div></td><td><p>{platform.limit}</p><div class="ls-platform-sources"><a href={platform.source} target="_blank" rel="noopener noreferrer">官方总览 ↗</a><a href={platform.docs} target="_blank" rel="noopener noreferrer">权限文档 ↗</a></div></td></tr>)}</tbody></table></div>
+  <p class="ls-chart-source">核验于 2026-10-18 · 仅比较官方披露的产品边界；每条入口仍需按实际工具、账户与地区资格确认。</p>
+</div>
+<style>
+  .ls-platform-tabs{display:flex;gap:1.25rem;margin:0 0 1rem;border-bottom:1px solid var(--border);}
+  .ls-platform-tabs button{position:relative;min-height:38px;padding:0;border:0;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;}
+  .ls-platform-tabs button::after{position:absolute;right:0;bottom:-1px;left:0;height:2px;background:transparent;content:'';}.ls-platform-tabs button[aria-pressed=true]{color:var(--fg);font-weight:600;}.ls-platform-tabs button[aria-pressed=true]::after{background:var(--accent);}
+  .ls-platforms{width:100%;min-width:680px;border-collapse:collapse;font-size:14px;table-layout:fixed;}
+  .ls-platforms th,.ls-platforms td{padding:1rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--border);font-weight:400;line-height:1.65;}
+  .ls-platforms thead th{background:var(--bg);font-size:13px;font-weight:500;color:var(--muted);padding-block:.7rem;}
+  .ls-platforms th:first-child{width:20%;}.ls-platforms th:nth-child(2){width:46%;}.ls-platforms tbody tr:last-child>*{border-bottom:0;}
+  .ls-platforms strong{font-size:14px;font-weight:600;}.ls-platforms small{display:block;margin-top:.35rem;color:var(--muted);font-size:12px;line-height:1.45;}
+  .ls-platforms td{color:var(--muted);}.ls-platforms p{margin:0;font-size:13px;}.ls-platform-sources{display:flex;flex-wrap:wrap;gap:.4rem .8rem;margin-top:.7rem;}.ls-platform-sources a{font-size:13px;}
+  @media(max-width:900px){.ls-platform-tabs button{min-height:44px;}.ls-platform-sources a{display:inline-flex;min-height:44px;align-items:center;}}
+  @media(max-width:620px){.ls-platforms th:first-child{width:20%;}.ls-platform-tabs{gap:1rem;}}
+</style>

@@ -1,0 +1,4 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'; import ResearchList from '../../components/ResearchList.astro'; import {site} from '../../site.config';
+---
+<BaseLayout title="Research" description="AI agents 与链上金融的持续研究。" width="wide"><div class="page-head"><h1>Research</h1><p class="lede">可阅读、可核查、会随数据更新的研究页面。</p></div><section class="section"><div class="section-heading"><h2>Published work</h2><span class="section-note">{site.research.length} reports</span></div><ResearchList items={site.research} /></section></BaseLayout>

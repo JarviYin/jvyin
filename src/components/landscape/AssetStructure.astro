@@ -1,0 +1,33 @@
+---
+import type { Snapshot } from '../../lib/landscape';
+import { displayValue, shortDate } from '../../lib/landscape';
+interface Props { snapshot: Snapshot }
+const {snapshot} = Astro.props;
+const totals = snapshot.metrics.filter(metric => metric.id.startsWith('rwa-'));
+const stablecoins = snapshot.breakdowns.filter(metric => metric.id.startsWith('stablecoin-'));
+const supply = snapshot.metrics.find(metric => metric.id === 'stablecoin-circulating-face-value')?.value ?? 0;
+const classes = [{id:'treasuries',label:'美国国债'},{id:'credit',label:'信贷'},{id:'equities',label:'权益'},{id:'commodities',label:'商品'}].map(asset => ({...asset,
+  distributed:snapshot.breakdowns.find(metric => metric.id===`rwa-xyz-${asset.id}-distributed`),
+  represented:snapshot.breakdowns.find(metric => metric.id===`rwa-xyz-${asset.id}-represented`),
+}));
+---
+<div class="ls-assets">
+  <div class="asset-tabs" role="group" aria-label="资产结构视图"><button type="button" data-asset-tab="rwa" aria-pressed="true">RWA</button><button type="button" data-asset-tab="stablecoins" aria-pressed="false">稳定币</button></div>
+  <div data-asset-view="rwa">
+    <div class="asset-totals">{totals.map(metric=><div><span>{metric.label.replace('RWA.xyz ','')}</span><strong>≈ {displayValue(metric.value,metric.unit)}</strong><small>{shortDate(metric.asOf)} · <a href={metric.sourceUrl} target="_blank" rel="noopener noreferrer">RWA.xyz ↗</a></small></div>)}</div>
+    <div class="ls-table-scroll" tabindex="0" role="region" aria-label="RWA 资产分类数据，可左右滚动"><table class="asset-table"><thead><tr><th scope="col">资产类别</th><th scope="col" class="numeric">Distributed</th><th scope="col" class="numeric">Represented</th><th scope="col">观测日期</th><th scope="col">来源</th></tr></thead><tbody>{classes.map(asset=><tr><th scope="row">{asset.label}</th><td class="numeric">{asset.distributed?.value == null ? '未取得' : `≈ ${displayValue(asset.distributed.value)}`}</td><td class="numeric">{asset.represented?.value == null ? '未取得' : `≈ ${displayValue(asset.represented.value)}`}</td><td>{shortDate(asset.distributed?.asOf || snapshot.asOf)}</td><td>{asset.distributed && <a href={asset.distributed.sourceUrl} target="_blank" rel="noopener noreferrer">分类页 ↗</a>}</td></tr>)}</tbody></table></div>
+    <details class="asset-notes"><summary>分类定义与数值说明</summary><p>Distributed 可移出发行平台并在钱包间转移，仍可能受白名单或资格约束；Represented 不具备上述可转移性。两者分列展示，合计不等于可流通规模。分类表为来源页面显示的舍入值，不表示完整市场类别。</p><a href="https://app.rwa.xyz/blog/a-new-framework-for-tokenized-assets-distributed-and-represented" target="_blank" rel="noopener noreferrer">分类定义 ↗</a></details>
+  </div>
+  <div data-asset-view="stablecoins" hidden>
+    <div class="ls-table-scroll" tabindex="0" role="region" aria-label="稳定币流通面额表格，可左右滚动"><table class="asset-table stable-table"><thead><tr><th scope="col">资产</th><th scope="col" class="numeric">流通面额</th><th scope="col" class="numeric">占比</th><th scope="col">占总流通面额</th><th scope="col">来源</th></tr></thead><tbody>{stablecoins.map(metric=><tr><th scope="row">{metric.label}</th><td class="numeric">{displayValue(metric.value,metric.unit)}</td><td class="numeric">{supply && metric.value != null ? `${(metric.value/supply*100).toFixed(2)}%` : '—'}</td><td><span class="supply-track"><i style={`width:${supply && metric.value != null ? metric.value/supply*100 : 0}%`}></i></span></td><td><a href={metric.sourceUrl} target="_blank" rel="noopener noreferrer">DefiLlama ↗</a></td></tr>)}</tbody></table></div>
+    <p class="asset-note">{shortDate(snapshot.asOf)} · 仅列前 {stablecoins.length} 项；占比以同口径总流通面额为分母。包含生息或代币化基金类资产，不等同于全部支付型美元。</p>
+  </div>
+</div>
+<style>
+  .asset-tabs {display:flex;gap:1.25rem;margin:0 0 1rem;border-bottom:1px solid var(--border);}.asset-tabs button{position:relative;min-height:38px;padding:0;background:transparent;border:0;color:var(--muted);font-size:14px;cursor:pointer;}.asset-tabs button::after{position:absolute;right:0;bottom:-1px;left:0;height:2px;background:transparent;content:'';}.asset-tabs button[aria-pressed=true]{color:var(--fg);font-weight:600;}.asset-tabs button[aria-pressed=true]::after{background:var(--accent);}
+  .asset-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:0 0 1rem;border:1px solid var(--border);border-radius:2px;background:var(--surface);}.asset-totals>div{min-width:0;padding:1rem 1.15rem;}.asset-totals>div+div{border-left:1px solid var(--border);}.asset-totals span{display:block;color:var(--muted);font-size:13px;}.asset-totals strong{display:block;margin:.3rem 0;font:600 24px/1.2 var(--font-sans);letter-spacing:-.025em;overflow-wrap:anywhere;}.asset-totals small{color:var(--muted);font-size:12px;}
+  .asset-table{width:100%;min-width:590px;border-collapse:collapse;font-size:14px;}.asset-table th,.asset-table td{text-align:left;padding:.75rem .9rem;border-bottom:1px solid var(--border);font-weight:400;}.asset-table thead th{background:var(--bg);color:var(--muted);font-size:13px;font-weight:500;}.asset-table th[scope=row]{color:var(--fg);font-weight:500;}.asset-table tr:last-child>*{border-bottom:0;}.asset-table .numeric{text-align:right;font-variant-numeric:tabular-nums;}.asset-table td:nth-last-child(2),.asset-table td:last-child{font-size:13px;}.asset-table td:nth-last-child(2){color:var(--muted);}.asset-table tbody tr:hover{background:var(--accent-soft);}
+  .stable-table td:nth-child(4){width:25%;}.supply-track{display:block;height:6px;background:var(--border);}.supply-track i{display:block;height:100%;background:var(--accent);opacity:.8;}.asset-notes{margin-top:1rem;padding-top:.8rem;border-top:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1.7;}.asset-notes summary{color:var(--fg);cursor:pointer;font-size:13px;}.asset-note{margin-top:.75rem;color:var(--muted);font-size:13px;line-height:1.7;}
+  @media(max-width:900px){.asset-tabs button{min-height:44px;}.asset-table a{display:inline-flex;min-height:44px;align-items:center;}}
+  @media(max-width:620px){.asset-totals>div{padding:.85rem;}.asset-totals strong{font-size:20px;}.asset-totals small{font-size:12px;}.asset-tabs{gap:1rem;}}
+</style>

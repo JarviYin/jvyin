@@ -1,0 +1,188 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareBar from '../ShareBar.astro';
+import AssetStructure from './AssetStructure.astro';
+import PlatformComparison from './PlatformComparison.astro';
+import AgentFrontier from './AgentFrontier.astro';
+import { aiProducts, aiSectors } from '../../data/ai-agents';
+import { getAgentFeed } from '../../lib/ai-agents';
+import { entities, entityPageSectors, agentSectors, financeSectors, research, events } from '../../data/ecosystem';
+import { getSnapshot, displayValue, shortDate, validateLandscape } from '../../lib/landscape';
+import '../../styles/landscape.css';
+
+interface Props { kind: 'agents' | 'finance' }
+const { kind } = Astro.props;
+const isAgent = kind === 'agents';
+const originalEntities = entities.filter(entity => entity.pages.includes(kind)).map(entity => ({ ...entity, sector: entityPageSectors[entity.id]?.[kind] || entity.sector }));
+const pageEntities = isAgent ? [...aiProducts, ...originalEntities] : originalEntities;
+const sectors = isAgent ? [...aiSectors, ...agentSectors] : financeSectors;
+const snapshot = getSnapshot(kind);
+const agentFeed = isAgent ? getAgentFeed() : null;
+validateLandscape(snapshot, originalEntities, [...research, ...events], sectors);
+validateLandscape({ ...snapshot, metrics: snapshot.metrics.filter(metric => metric.id !== 'agent-capability-catalog-count') }, pageEntities, agentFeed?.news || [], sectors);
+const title = isAgent ? 'AI agents' : '链上金融';
+const description = isAgent ? '前沿产品、公开数据与一手资讯。从 Claude、GPT、DeepSeek、Grok Bot，到链上执行与支付。' : '追踪稳定币、DeFi 与 RWA，查看市场趋势和协议生态。';
+const slug = isAgent ? 'agents' : 'onchain-finance';
+const chains = [...new Set(pageEntities.flatMap(entity => entity.chains))].sort();
+const stages = [...new Set(pageEntities.map(entity => entity.stage))].sort();
+const sourceCount = new Set(pageEntities.flatMap(entity => entity.evidence.map(source => source.url))).size;
+const currentSeries = Object.entries(snapshot.series).filter(([, points]) => points.length > 1);
+const coverage = sectors.map(sector => ({ ...sector, count: pageEntities.filter(entity => entity.sector === sector.id).length }));
+const maximumCoverage = Math.max(1, ...coverage.map(sector => sector.count));
+const feed = isAgent ? agentFeed!.news : [...events, ...research]
+  .filter(item => item.evidenceLevel !== 'methodology' && item.id !== 'blackrock-buidl-fund-page')
+  .filter(item => isAgent ? /agent|pay|wallet|identity|research/i.test(item.topic) : /rwa|finance|stable|defi|market|pay/i.test(item.topic))
+  .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+const stageLabel: Record<string, string> = { active: '已发布', announced: '已公告', proposed: '提案' };
+const chainLabel = (chain: string) => ({ 'multi-chain': '多链', 'centralized exchange': 'CEX', 'protocol-agnostic': '协议无关' }[chain] || chain);
+const metricLabels: Record<string, string> = {
+  'global-defi-tvl': 'DeFi TVL',
+  'stablecoin-circulating-face-value': '稳定币流通面额',
+  'dex-volume-24h': 'DEX 成交额 · 24h',
+  'rwa-distributed-asset-value': 'RWA · Distributed',
+  'x402-indexed-transactions-cumulative': 'x402scan 累计索引交易',
+  'x402-indexed-unique-buyers-cumulative': '买方地址',
+  'x402-indexed-unique-sellers-cumulative': '卖方地址',
+  'agent-capability-catalog-count': '收录项目',
+};
+const accessLabels: Record<string, string> = { 'public-read': '公开接口', 'manual-public-page-only': '人工核验', 'manual-public-observation': '人工核验', 'paid-awaiting-authorization': '未接入', 'official-capability': '官方资料' };
+const pageDate = isAgent ? '2026-10-19' : snapshot.asOf;
+const payload = JSON.stringify({ kind, title, entities: pageEntities, sectors, snapshot: isAgent ? { ...snapshot, asOf: pageDate, metrics: snapshot.metrics.filter(metric => metric.id !== 'agent-capability-catalog-count') } : snapshot });
+---
+
+<BaseLayout title={title} description={description} width="wide" canonical={`/${slug}/`} image={`/share/og/${slug}.png`}>
+  <div data-landscape class="landscape" data-kind={kind}>
+    <header class="ls-page-head">
+      <div><h1>{title}</h1><p>{description}</p></div>
+      <div class="ls-page-actions">
+        <a class="ls-text-action" href={isAgent ? '/data/ai-agents/current.json' : `/data/${kind}/current.json`} download>下载数据</a>
+        <ShareBar title={title} description={description} url={`https://jvyin.com/${slug}/`} id={slug} view compact source="jvyin.com" date={pageDate} />
+      </div>
+    </header>
+    <div class="ls-data-status">
+      <span>{isAgent ? '资讯采集' : '快照'} <time datetime={isAgent ? agentFeed!.attemptedAt : snapshot.observedAt}>{shortDate(isAgent ? agentFeed!.attemptedAt : snapshot.observedAt)}</time></span>
+      <span>{pageEntities.length} 个项目</span><span>{sourceCount} 个原始来源</span>
+      <a href="#sources">数据说明</a>
+    </div>
+
+    {isAgent && <AgentFrontier />}
+    {!isAgent && <section id="signals" class="ls-overview" aria-label="数据概览">
+      <div class="ls-metrics">
+        {snapshot.metrics.slice(0, 4).map(metric => (
+          <article class="ls-metric">
+            <div class="ls-metric-label"><span>{metricLabels[metric.id] || metric.label}</span><a href={metric.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`${metric.label} 数据来源`}>↗</a></div>
+            <div class="ls-metric-value">
+              <strong title={metric.value === null ? '本次未取得核验值' : new Intl.NumberFormat('en-US').format(metric.value)}>{displayValue(metric.value, metric.unit)}</strong>
+              {metric.change7d != null && <span class:list={['ls-change', metric.change7d >= 0 ? 'up' : 'down']}>{metric.change7d >= 0 ? '+' : ''}{metric.change7d.toFixed(2)}% <small>7d</small></span>}
+            </div>
+            <div class="ls-metric-foot"><time datetime={metric.asOf}>{shortDate(metric.asOf)}</time><details><summary aria-label={`${metric.label} 统计口径`}>口径</summary><p>{metric.scope}</p>{metric.note && <p>{metric.note}</p>}</details></div>
+          </article>
+        ))}
+      </div>
+      {isAgent && <p class="ls-inline-note">x402scan 为协议索引数据；地址不等于用户或自主 Agent，项目收录数不表示采用量。</p>}
+      {currentSeries.length > 0 && (
+        <article class="ls-chart-panel">
+          <div class="ls-chart-heading">
+            <h2>市场趋势</h2>
+            <select data-chart-series aria-label="选择趋势指标">{currentSeries.map(([id]) => <option value={id}>{snapshot.seriesMeta?.[id]?.label || id}</option>)}</select>
+            <div class="ls-segment" role="group" aria-label="时间范围">
+              <button type="button" data-chart-range="30" aria-pressed="false">30D</button><button type="button" data-chart-range="90" aria-pressed="true">90D</button><button type="button" data-chart-range="all" aria-pressed="false">全部</button>
+            </div>
+            <button class="ls-text-action" type="button" data-chart-export>导出 SVG</button>
+          </div>
+          <div class="ls-chart-readout" data-chart-readout aria-live="polite"></div>
+          <div class="ls-chart" data-chart></div>
+          <label class="ls-chart-scrub">日期<input type="range" min="0" max="0" value="0" data-chart-cursor aria-label="查看图表具体日期" /></label>
+          <p class="ls-chart-source" data-chart-source></p>
+          <noscript><p class="ls-inline-note">交互图表需要 JavaScript，可下载上方数据查看原始观测。</p></noscript>
+        </article>
+      )}
+    </section>}
+
+    <nav class="ls-subnav" aria-label="页面目录">
+      <a href="#frontier">新闻与研究</a><a href="#landscape">{isAgent ? '产品与生态' : '生态目录'}</a><a href="#capabilities">{isAgent ? '链上应用' : 'RWA 与稳定币'}</a><a href="#sources">数据来源</a>
+    </nav>
+
+    <section id="frontier" class="ls-section" aria-labelledby="frontier-title">
+      <div class="ls-section-head"><div><h2 id="frontier-title">新闻与研究</h2>{isAgent && <p>官方资讯与版本发布 · 按发布日期排列 · 来源更新状态见下方</p>}</div><div class="agent-feed-filters">{isAgent && <select data-feed-publisher aria-label="筛选资讯来源"><option value="all">全部来源</option>{[...new Set(feed.map(item => item.publisher))].sort().map(publisher => <option value={publisher}>{publisher}</option>)}</select>}<select data-feed-filter aria-label="筛选前沿资料类型"><option value="all">全部类型</option><option value="release">产品发布</option><option value="research">研究论文</option><option value="report">资讯与报告</option></select></div></div>
+      <div class="ls-feed">
+        {feed.map(item => <article data-feed-kind={item.kind} data-feed-publisher-item={item.publisher}><div class="ls-feed-date"><time datetime={item.publishedAt}>{shortDate(item.publishedAt)}</time><span>{item.kind === 'research' ? '论文' : item.kind === 'release' ? '发布' : isAgent ? '资讯' : '报告'}</span></div><div><h3><a href={item.url} target="_blank" rel="noopener noreferrer">{item.title} ↗</a></h3><p>{item.summary}</p><small>{item.publisher}{item.publisher === 'arXiv' ? ' · 预印本' : ''}</small></div></article>)}
+      </div>
+      <button type="button" class="ls-text-action agent-feed-more" data-feed-more hidden>查看更多动态 ↓</button>
+      <p data-feed-empty class="ls-empty" hidden>此类型暂无收录。</p>
+    </section>
+
+    <section id="landscape" class="ls-section ls-catalog" aria-labelledby="landscape-title">
+      <div class="ls-section-head">
+        <div><h2 id="landscape-title">{isAgent ? '产品与生态' : '生态目录'} <span class="ls-count">{pageEntities.length}</span></h2><p>{isAgent ? '模型、助手、执行型产品与链上工具。按类别探索、搜索或对比。' : '按产品披露的能力收录，未按交易规模排名。'}</p></div>
+        <button type="button" class="ls-button" data-catalog-export>导出 CSV</button>
+      </div>
+      <div class="ls-sector-tabs" role="group" aria-label="生态板块快速筛选">
+        <button type="button" data-sector-jump="all" aria-pressed="true">全部 <span>{pageEntities.length}</span></button>
+        {coverage.map(sector => <button type="button" data-sector-jump={sector.id} aria-pressed="false" title={sector.description}>{sector.label} <span>{sector.count}</span></button>)}
+      </div>
+      <div class="ls-filters" id="projects">
+        <label class="ls-search"><span class="ls-sr-only">搜索</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" /></svg><input type="search" data-filter="q" placeholder="搜索项目、协议或能力" autocomplete="off" /></label>
+        <label><span class="ls-sr-only">板块</span><select data-filter="sector"><option value="all">全部板块</option>{sectors.map(sector => <option value={sector.id}>{sector.label}</option>)}</select></label>
+        <label><span class="ls-sr-only">适用环境</span><select data-filter="chain"><option value="all">{isAgent ? '全部环境' : '全部网络'}</option>{chains.map(chain => <option value={chain}>{chainLabel(chain)}</option>)}</select></label>
+        <label><span class="ls-sr-only">产品状态</span><select data-filter="stage"><option value="all">全部状态</option>{stages.map(stage => <option value={stage}>{stageLabel[stage] || stage}</option>)}</select></label>
+        <button type="button" class="ls-text-action" data-filter-reset>重置</button>
+      </div>
+      <div class="ls-result-meta"><p data-result-count aria-live="polite">{pageEntities.length} 个项目</p><span>选择项目对比，最多 3 项</span></div>
+      <div class="ls-table-scroll" tabindex="0" role="region" aria-label="生态项目表格，可左右滚动">
+        <table class="ls-project-table">
+          <caption class="ls-sr-only">项目能力、网络与原始证据。点击名称查看完整资料。</caption>
+          <thead><tr>
+            <th class="ls-index-col" scope="col">#</th>
+            <th class="ls-name-col" scope="col" aria-sort="ascending"><button type="button" data-sort="name">项目 <span data-sort-indicator>↑</span></button></th>
+            <th class="ls-sector-col" scope="col" aria-sort="none"><button type="button" data-sort="sector">板块 <span data-sort-indicator>↕</span></button></th>
+            <th class="ls-capability-col" scope="col">披露能力</th><th class="ls-chain-col" scope="col">{isAgent ? '环境 / 网络' : '网络'}</th>
+            <th class="ls-evidence-col" scope="col" data-sort-label="证据"><div class="ls-evidence-heading"><button type="button" data-sort="sources">来源 <span data-sort-indicator>↕</span></button><button type="button" data-sort="reviewed">核验日期 <span data-sort-indicator>↕</span></button></div></th>
+            <th class="ls-check-col" scope="col">对比</th>
+          </tr></thead>
+          <tbody data-project-grid>
+            {pageEntities.map((entity, index) => (
+              <tr data-entity={entity.id}>
+                <td class="ls-index-col" data-row-number>{index + 1}</td>
+                <th class="ls-name-col" scope="row"><div class="ls-project-identity"><button type="button" class="ls-project-title" data-entity-open={entity.id}>{entity.name}</button><a class="ls-website" href={entity.url} target="_blank" rel="noopener noreferrer" aria-label={`${entity.name} 官网`}>↗</a></div>{entity.stage !== 'active' && <span class="ls-stage">{stageLabel[entity.stage] || entity.stage}</span>}</th>
+                <td class="ls-sector-col">{sectors.find(sector => sector.id === entity.sector)?.label || entity.sector}</td>
+                <td class="ls-capability-cell" title={entity.capabilities.join(' · ')}>{entity.capabilities.slice(0, 2).join(' · ')}{entity.capabilities.length > 2 && <span> +{entity.capabilities.length - 2}</span>}</td>
+                <td class="ls-chain-list">{entity.chains.slice(0, 2).map(chainLabel).join(' / ')}{entity.chains.length > 2 && <span> +{entity.chains.length - 2}</span>}</td>
+                <td class="ls-evidence-cell"><button type="button" class="ls-source-button" data-entity-open={entity.id} aria-label={`${entity.name} 的 ${entity.evidence.length} 条原始来源`}>{entity.evidence.length} 个来源 ↗</button><time datetime={entity.reviewedAt}>{shortDate(entity.reviewedAt)}</time></td>
+                <td class="ls-check-col"><label class="ls-compare-check"><input type="checkbox" value={entity.id} data-compare aria-label={`对比 ${entity.name}`} /><span class="ls-sr-only">对比 {entity.name}</span></label></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <noscript><details class="ls-method-details"><summary>项目来源索引</summary>{pageEntities.map(entity => <p><a href={entity.url}>{entity.name} 官网 ↗</a> · {entity.evidence.map(source => <a href={source.url}>{source.label} ↗ </a>)}</p>)}</details></noscript>
+      <div class="ls-empty" data-filter-empty hidden><h3>没有匹配项目</h3><p>减少筛选条件，或搜索其他关键词。</p><button type="button" class="ls-button" data-filter-reset>重置筛选</button></div>
+      <div class="ls-show-more"><button type="button" data-show-more class="ls-button" hidden>显示更多</button></div>
+      <div class="ls-compare-tray" data-compare-tray hidden><p data-compare-label>已选 0 / 3 项</p><div><button type="button" data-compare-clear>清空</button><button type="button" data-compare-open>查看对比</button></div></div>
+      <p class="ls-live-status" data-landscape-status aria-live="polite"></p>
+    </section>
+
+    <section id="capabilities" class="ls-section ls-data-section" aria-labelledby="capabilities-title">
+      <div class="ls-section-head"><h2 id="capabilities-title">{isAgent ? 'Agents × 链上应用' : 'RWA 与稳定币'}</h2><a href={isAgent ? '/onchain-finance/' : '/agents/'}>{isAgent ? '链上金融数据' : 'Agent 生态'} ↗</a></div>
+      {isAgent ? <PlatformComparison /> : <AssetStructure snapshot={snapshot} />}
+      {isAgent && <details class="ls-method-details"><summary>链上支付观测 · x402 历史基线</summary><div class="ls-metrics">{snapshot.metrics.slice(0, 3).map(metric => <article class="ls-metric"><a href={metric.sourceUrl} target="_blank" rel="noopener noreferrer">{metricLabels[metric.id] || metric.label} ↗</a><div class="ls-metric-value"><strong>{displayValue(metric.value, metric.unit)}</strong></div><p>{shortDate(metric.asOf)} · {metric.note}</p></article>)}</div></details>}
+    </section>
+
+    <section id="sources" class="ls-section ls-source-section" aria-labelledby="sources-title">
+      <div class="ls-section-head"><h2 id="sources-title">数据来源</h2><a href={isAgent ? '/data/ai-agents/current.json' : `/data/${kind}/current.json`} download>下载{isAgent ? '采集快照' : '完整快照'} ↗</a></div>
+      {isAgent && <><div class="agent-source-list">{agentFeed!.sources.map(source => <p><a href={source.url} target="_blank" rel="noopener noreferrer">{source.name} · {source.kind === 'repo' ? '仓库数据' : '官方动态'} ↗</a><span>{source.status === 'ok' ? '采集成功' : source.status === 'stale' ? '采集失败，保留旧值' : '本次未取得'} · {source.observedAt ? shortDate(source.observedAt) : '无有效观测'}</span></p>)}</div><p class="ls-inline-note">产品能力与精选资料核验于 2026-10-19。官方 RSS / GitHub 数据可运行刷新命令后重新构建；定时任务尚未启用。来源失败保留原观测日期，不以刷新时间冒充数据时间。</p></>}
+      {isAgent && <details class="ls-coverage-details"><summary>查看目录的板块分布</summary><div class="ls-coverage">{coverage.map(sector => <button type="button" data-sector-jump={sector.id} aria-pressed="false"><span>{sector.label}</span><div><i style={`width:${sector.count / maximumCoverage * 100}%`}></i></div><b>{sector.count}</b></button>)}</div><p class="ls-inline-note">按主要板块归类，表示研究覆盖，非市场份额。</p></details>}
+      <div class="ls-table-scroll" tabindex="0" role="region" aria-label="数据来源表格"><table class="ls-source-table"><thead><tr><th scope="col">来源</th><th scope="col">接入方式</th><th scope="col">范围与限制</th></tr></thead><tbody>{snapshot.access.map(source => <tr><th scope="row"><a href={source.url} target="_blank" rel="noopener noreferrer">{source.source} ↗</a></th><td>{accessLabels[source.status] || source.status}</td><td>{source.note}</td></tr>)}</tbody></table></div>
+      <details class="ls-method-details"><summary>更新方式与统计口径</summary><p>数据快照保留上次成功观测；人工来源保留各自核验日期。当前定时更新尚未启用。</p><ul>{snapshot.update.limitations.map(item => <li>{item}</li>)}</ul><p>目录是人工整理的研究样本。未取得的数据不以 0 替代；能力披露不等于实际 Agent 采用量、收益或安全性。</p></details>
+    </section>
+
+    <dialog class="ls-dialog" data-entity-dialog aria-label="项目证据详情"><div class="ls-dialog-top"><h2>项目资料</h2><button type="button" data-dialog-close aria-label="关闭项目详情">×</button></div><div data-entity-content></div></dialog>
+    <dialog class="ls-dialog ls-compare-dialog" data-compare-dialog aria-label="项目能力对比"><div class="ls-dialog-top"><h2>项目能力对比</h2><button type="button" data-dialog-close aria-label="关闭项目对比">×</button></div><p class="ls-compare-hint">左右滚动查看全部已选项目。</p><div data-compare-content class="ls-compare-scroll"></div></dialog>
+    {pageEntities.map(entity => <template data-entity-template={entity.id}><h2>{entity.name}</h2><div class="ls-drawer-meta"><span>{sectors.find(sector => sector.id === entity.sector)?.label}</span><span>{stageLabel[entity.stage] || entity.stage}</span><span>核验 {shortDate(entity.reviewedAt)}</span></div><p class="ls-drawer-summary">{entity.summary}</p><a class="ls-button" href={entity.url} target="_blank" rel="noopener noreferrer">访问官网 ↗</a><h3>披露能力</h3><ul>{entity.capabilities.map(capability => <li>{capability}</li>)}</ul><h3>网络与角色</h3><p>{entity.chains.map(chainLabel).join(' / ')}</p><p>{entity.roles.join(' · ')}</p><h3>原始证据</h3><ol class="ls-evidence-list">{entity.evidence.map(source => <li><a href={source.url} target="_blank" rel="noopener noreferrer">{source.label} ↗</a><small>{source.publisher}{source.date && ` · ${shortDate(source.date)}`}</small></li>)}</ol><p class="ls-inline-note">以上资料支持对应产品能力，不构成实际使用量、收益或安全性证明。</p></template>)}
+    <script type="application/json" data-landscape-payload set:html={payload.replaceAll('<', '\\u003c')} />
+  </div>
+</BaseLayout>
+<script>
+  import { mountLandscape } from '../../scripts/landscape';
+  mountLandscape();
+</script>

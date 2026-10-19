@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-18",
+  "observedAt": "2026-10-18T09:06:11.570Z",
+  "metrics": [
+    {
+      "id": "x402-indexed-transactions-cumulative",
+      "label": "x402scan 索引累计交易",
+      "value": 2987237,
+      "unit": "transactions",
+      "change7d": null,
+      "sourceUrl": "https://www.x402scan.com/",
+      "asOf": "2026-10-18",
+      "scope": "x402scan 公开首页可见的累计计数，覆盖范围由该浏览器定义。",
+      "note": "不是代理专属成交额、独立用户数、结算额或收入。"
+    },
+    {
+      "id": "x402-indexed-unique-buyers-cumulative",
+      "label": "x402scan 索引独立买方",
+      "value": 36578,
+      "unit": "addresses",
+      "change7d": null,
+      "sourceUrl": "https://www.x402scan.com/",
+      "asOf": "2026-10-18",
+      "scope": "浏览器报告的累计独立买方；地址身份和覆盖范围均由来源定义。",
+      "note": "地址不是已验证的人或自主代理。"
+    },
+    {
+      "id": "x402-indexed-unique-sellers-cumulative",
+      "label": "x402scan 索引独立卖方",
+      "value": 38657,
+      "unit": "addresses",
+      "change7d": null,
+      "sourceUrl": "https://www.x402scan.com/",
+      "asOf": "2026-10-18",
+      "scope": "浏览器报告的累计独立卖方；地址身份和覆盖范围均由来源定义。",
+      "note": "地址不是已验证的企业或自主代理。"
+    },
+    {
+      "id": "agent-capability-catalog-count",
+      "label": "已核验代理能力实体",
+      "value": 23,
+      "unit": "entities",
+      "change7d": null,
+      "sourceUrl": "/data/agents/current.json",
+      "asOf": "2026-10-18",
+      "scope": "本地 ecosystem 注册表中 pages 包含 agents 的实体数。",
+      "note": "这是目录覆盖数，不是采用量、用户数或交易量。"
+    }
+  ],
+  "series": {},
+  "seriesMeta": {},
+  "breakdowns": [],
+  "access": [
+    {
+      "source": "x402scan 公开首页",
+      "status": "manual-public-observation",
+      "note": "已录入带日期的首页计数人工观察；未调用付费端点，后续刷新会保留这项基线直至人工复核。",
+      "url": "https://www.x402scan.com/"
+    },
+    {
+      "source": "x402scan API",
+      "status": "paid-awaiting-authorization",
+      "note": "仅查阅文档；未获付费授权，因此不调用数据端点。",
+      "url": "https://www.x402scan.com/docs"
+    },
+    {
+      "source": "OKX Agentic Wallet",
+      "status": "official-capability",
+      "note": "能力证据见 ecosystem 注册表，不从能力文档推断采用量。",
+      "url": "https://www.okx.com/en-us/learn/agentic-wallet"
+    },
+    {
+      "source": "Coinbase AI Agents",
+      "status": "official-capability",
+      "note": "能力证据见 ecosystem 注册表，不从能力文档推断采用量。",
+      "url": "https://docs.cdp.coinbase.com/ai-agents/overview"
+    }
+  ],
+  "update": {
+    "collector": "scripts/refresh-landscape.mjs",
+    "allowlistedSources": [],
+    "lastSourceObservationAt": "2026-10-18T09:06:11.570Z",
+    "lastLocalRefreshAt": "2026-10-18T10:14:35.567Z",
+    "limitations": [
+      "未使用付费端点或 API 密钥。",
+      "x402scan 数值是带日期的公开页面人工基线，自动刷新不会伪装成重新采集。",
+      "没有方法可核验的当前公开值时，不输出代理采用量。"
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="确认订阅" noindex>
+  <div class="page-head">
+    <h1>确认订阅</h1>
+  </div>
+  <p id="status" class="muted" role="status" aria-live="polite">处理中…</p>
+  <noscript>
+    <p class="muted">订阅已提交。若浏览器未显示结果，请查收确认邮件完成订阅。</p>
+  </noscript>
+  <p style="margin-top: 1.5rem">
+    <a href="/newsletter/">前往 Newsletter 存档 →</a>
+  </p>
+
+  <script>
+    // 状态显示（静态站，查询参数由客户端读取）
+    // - /confirm?ok=1            确认成功（/api/confirm 302 跳来）
+    // - /confirm?err=invalid     链接无效或过期
+    // - /confirm?sub=ok          订阅已提交成功（无 JS 表单兜底路径 302 跳来）
+    // - /confirm?sub=err&reason= 订阅提交失败（reason: sandbox | invalid | send）
+    // - /confirm?token=...       旧版链接：直接导航到 API，服务端确认后 302 回来
+    const el = document.getElementById('status');
+    const q = new URLSearchParams(location.search);
+    const setText = (t) => {
+      el.textContent = t;
+      el.classList.remove('muted');
+    };
+    if (q.get('ok') === '1') {
+      setText('✅ 订阅成功！以后每期 newsletter 都会直接发到你的邮箱。');
+    } else if (q.get('err') === 'invalid') {
+      setText('❌ 链接无效或已过期。请回到 Newsletter 页面重新订阅。');
+    } else if (q.get('sub') === 'ok') {
+      setText('✅ 订阅成功！请查收确认邮件，点击邮件里的链接完成订阅。');
+    } else if (q.get('sub') === 'err') {
+      const reason = q.get('reason');
+      if (reason === 'sandbox') {
+        setText('❌ 订阅暂时无法完成：邮件系统正在开通审核中（AWS 审批，通常 24 小时内）。审核通过后请重新订阅一次。');
+      } else if (reason === 'invalid') {
+        setText('❌ 邮箱格式不正确，请检查后重新订阅。');
+      } else {
+        setText('❌ 订阅失败：确认邮件发送失败，请稍后再试。');
+      }
+    } else if (q.get('token')) {
+      location.replace('/api/confirm?token=' + encodeURIComponent(q.get('token')));
+    } else {
+      el.textContent = '链接缺少确认令牌。请回到 Newsletter 页面重新订阅。';
+    }
+  </script>
+</BaseLayout>

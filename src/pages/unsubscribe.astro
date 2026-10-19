@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const prefill = '';
+---
+
+<BaseLayout title="退订" noindex>
+  <div class="page-head">
+    <h1>退订</h1>
+  </div>
+
+  <p id="unsub-status" class="muted" role="status" aria-live="polite"></p>
+
+  <div id="unsub-box">
+    <p class="lede">很遗憾看到你离开。输入邮箱即可一键退订，之后不会再收到任何邮件。</p>
+    <form class="subscribe-form" id="unsub-form" style="margin-top: 1.5rem">
+      <input
+        type="email"
+        name="email"
+        id="unsub-email"
+        placeholder="you@example.com"
+        required
+        autocomplete="email"
+      />
+      <button type="submit">退订</button>
+    </form>
+    <div class="form-msg" id="unsub-msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <p style="margin-top: 1.5rem">
+    <a href="/">← 回到首页</a>
+  </p>
+
+  <script>
+    // 状态显示（静态站，查询参数由客户端读取）
+    // - /unsubscribe?done=1    已退订（/api/unsubscribe 302 跳来）
+    // - /unsubscribe?err=1     邮箱格式错误
+    // - /unsubscribe?email=x   表单预填
+    const q = new URLSearchParams(location.search);
+    const statusEl = document.getElementById('unsub-status');
+    const box = document.getElementById('unsub-box');
+    const form = document.getElementById('unsub-form');
+    const msg = document.getElementById('unsub-msg');
+    const button = form.querySelector('button');
+
+    if (q.get('done') === '1') {
+      statusEl.textContent = '已退订。之后不会再收到任何邮件，祝你一切顺利 👋';
+      statusEl.classList.remove('muted');
+      box.remove();
+    } else if (q.get('err') === '1') {
+      statusEl.textContent = '出错了：邮箱格式不正确。请检查后重试。';
+    }
+
+    const prefill = q.get('email');
+    if (prefill) {
+      document.getElementById('unsub-email').value = prefill;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = new FormData(form).get('email');
+      button.disabled = true;
+      msg.className = 'form-msg';
+      msg.textContent = '处理中…';
+      try {
+        const res = await fetch('/api/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const body = await res.json().catch(() => null);
+        if (res.ok && body?.ok) {
+          msg.className = 'form-msg ok';
+          msg.textContent = '✅ ' + (body.message ?? '已退订。祝你一切顺利 👋');
+          form.reset();
+        } else {
+          msg.className = 'form-msg err';
+          msg.textContent = '❌ ' + (body?.message ?? '退订失败：服务器暂时不可用，请稍后再试。');
+        }
+      } catch {
+        msg.className = 'form-msg err';
+        msg.textContent = '❌ 网络错误：请检查网络后重试。';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

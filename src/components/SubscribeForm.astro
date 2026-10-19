@@ -1,0 +1,76 @@
+---
+import { site } from '../site.config';
+
+interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props;
+
+/**
+ * 订阅 API 基地址：
+ * - 生产环境留空 → 同源请求 /api/...（由 CloudFront 转发到 API Gateway）
+ * - 本地开发 → 在 .env 里设置 PUBLIC_SUBSCRIBE_API_URL 指向 API Gateway 直连地址
+ */
+const apiBase = import.meta.env.PUBLIC_SUBSCRIBE_API_URL ?? '';
+---
+
+<div class="subscribe-box" id="subscribe">
+  <h2>订阅 Newsletter</h2>
+  <p>{site.newsletter.blurb}<br /><span class="muted">{site.newsletter.frequency} · 可随时退订</span></p>
+  <form class="subscribe-form" id="subscribe-form" action="/api/subscribe" method="POST" novalidate>
+    <label class="hp-field" aria-hidden="true">
+      请勿填写此字段
+      <input type="text" name="hp_x7q2" tabindex="-1" autocomplete="nope" />
+    </label>
+    <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+    <button type="submit">订阅</button>
+  </form>
+  <div class="form-msg" id="subscribe-msg" role="status" aria-live="polite"></div>
+</div>
+
+<script define:vars={{ apiBase }}>
+  const form = document.getElementById('subscribe-form');
+  const msg = document.getElementById('subscribe-msg');
+  const button = form.querySelector('button');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    // 蜜罐：机器人填了隐藏字段 → 假装成功，不发送
+    if (data.get('hp_x7q2')) {
+      msg.className = 'form-msg ok';
+      msg.textContent = '✅ 订阅成功！请查收确认邮件。';
+      form.reset();
+      return;
+    }
+    const email = String(data.get('email') || '').trim();
+    if (!email) return;
+
+    button.disabled = true;
+    msg.className = 'form-msg';
+    msg.textContent = '提交中…';
+
+    try {
+      const res = await fetch(`${apiBase}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const body = await res.json().catch(() => null);
+      if (res.ok && body?.ok) {
+        msg.className = 'form-msg ok';
+        msg.textContent = '✅ ' + (body.message ?? '订阅成功！请查收确认邮件，点击邮件里的链接完成订阅。');
+        form.reset();
+      } else {
+        msg.className = 'form-msg err';
+        msg.textContent = '❌ ' + (body?.message ?? '订阅失败：服务器暂时不可用，请稍后再试。');
+      }
+    } catch (err) {
+      msg.className = 'form-msg err';
+      msg.textContent = '❌ 网络错误：请检查网络后重试，或直接发邮件给我。';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>

@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SubscribeForm from '../../components/SubscribeForm.astro';
+import ShareBar from '../../components/ShareBar.astro';
+import { getNewsletters } from '../../lib/newsletters';
+import { site } from '../../site.config';
+
+export function getStaticPaths() {
+  return getNewsletters().map((issue) => ({ params: { id: issue.id }, props: { issue } }));
+}
+
+const { issue } = Astro.props;
+const canonical = new URL(`/newsletter/${issue.id}/`, site.url).href;
+const publishedDate = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(issue.pubDate));
+---
+
+<BaseLayout title={issue.title} description={issue.description} canonical={`/newsletter/${issue.id}/`} image={issue.cover} type="article" publishedTime={issue.pubDate}>
+  <article class="newsletter-issue">
+    <header class="page-head newsletter-issue__head">
+      <p class="newsletter-issue__eyebrow"><span>Newsletter · EP{String(Number(issue.id)).padStart(2, '0')}</span><span>发布于 <time datetime={issue.pubDate}>{publishedDate}</time></span></p>
+      <h1>{issue.title}</h1>
+      <p class="lede">{issue.description}</p>
+    </header>
+    <ShareBar title={issue.title} description={issue.description} url={canonical} image={new URL(issue.cover, site.url).href} id={issue.id} source="jvyin.com" date={issue.pubDate} />
+    <div class="prose" set:html={issue.body}></div>
+    <ShareBar title={issue.title} description={issue.description} url={canonical} image={new URL(issue.cover, site.url).href} id={issue.id} source="jvyin.com" date={issue.pubDate} footer />
+    <a class="back-link" href="/newsletter/">← 返回 Newsletter</a>
+  </article>
+  <SubscribeForm />
+</BaseLayout>
+
+<style>
+  .newsletter-issue { max-width:46rem; }
+  .newsletter-issue__head { border-bottom:1px solid var(--border); padding:0 0 1.5rem; }
+  .newsletter-issue__eyebrow { align-items:center; color:var(--muted); display:flex; font-family:var(--font-sans); font-size:.75rem; font-weight:500; gap:.65rem; letter-spacing:0; margin-bottom:.8rem; }
+  .newsletter-issue__eyebrow span + span { border-left:1px solid var(--border); font-size:.75rem; font-weight:400; padding-left:.65rem; }
+  .newsletter-issue__head h1 { font-family:var(--font-sans); font-size:1.875rem; font-weight:650; letter-spacing:-.03em; line-height:1.2; margin:0; max-width:42rem; }
+  .newsletter-issue__head .lede { color:var(--muted); font-size:1rem; line-height:1.65; margin:.8rem 0 0; max-width:42rem; }
+  .newsletter-issue :global(.prose) { font-size:1.0625rem; line-height:1.8; padding-top:.75rem; }
+  .newsletter-issue :global(.prose h2) { font-size:1.45rem; margin-top:2.4rem; }
+  .newsletter-issue :global(.prose h3) { font-size:1.15rem; margin-top:1.8rem; }
+  .newsletter-issue :global(.prose p) { margin:1.15rem 0; }
+  @media (max-width:480px) { .newsletter-issue__head { padding-bottom:1.15rem; } .newsletter-issue__eyebrow { align-items:flex-start; flex-direction:column; gap:.2rem; } .newsletter-issue__eyebrow span + span { border-left:0; padding-left:0; } .newsletter-issue__head h1 { font-size:1.5625rem; line-height:1.28; } .newsletter-issue__head .lede { font-size:.9375rem; } .newsletter-issue :global(.prose) { font-size:1rem; line-height:1.78; } }
+</style>

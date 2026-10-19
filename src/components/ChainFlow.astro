@@ -1,0 +1,31 @@
+---
+interface Props { compact?: boolean }
+const { compact = false } = Astro.props;
+const nodes = compact ? [35, 145, 255] : [44, 264, 484, 704, 924, 1156];
+const width = compact ? 290 : 1200;
+const backbone = compact ? 'M35 38H255' : 'M44 38H1156';
+---
+<div class:list={['chain-flow', { 'chain-flow--compact': compact }]} aria-hidden="true">
+  <svg viewBox={`0 0 ${width} 76`} fill="none" focusable="false">
+    <path class="chain-link" d={backbone} />
+    {!compact && <><path class="chain-branch" d="M264 38h70l22-23h220l23 23 M704 38h70l22 23h220l23-23" /><path class="chain-packet chain-packet--branch" pathLength="200" d="M264 38h70l22-23h220l23 23" /></>}
+    <path class="chain-packet" pathLength="200" d={backbone} />
+    {nodes.map((x, i) => <g class="chain-block" style={`--phase:${i * -.85}s`} transform={`translate(${x} 38)`}><path class="chain-block-surface" d="m0-13 12 7v13L0 14l-12-7V-6Z" /><path d="M-12-6 0 1l12-7 M0 1v13" /></g>)}
+  </svg>
+</div>
+<style>
+  .chain-flow{width:100%;overflow:hidden;pointer-events:none}
+  .chain-flow svg{width:100%;height:76px;display:block}
+  .chain-link{stroke:var(--border);stroke-width:1}
+  .chain-branch{stroke:var(--border);stroke-width:1;stroke-dasharray:2 5}
+  .chain-packet{stroke:var(--orange);stroke-width:1.4;stroke-dasharray:9 191;animation:chain-transmit 8s linear infinite}
+  .chain-packet--branch{animation-duration:6s;animation-delay:-3s;opacity:.55}
+  .chain-block{stroke:#a8a29c;stroke-width:1;animation:chain-confirm 6s ease-in-out var(--phase) infinite}
+  .chain-block-surface{fill:white}
+  .chain-flow--compact{width:180px;flex:0 0 180px}
+  .chain-flow--compact svg{height:35px}
+  @keyframes chain-transmit{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
+  @keyframes chain-confirm{0%,65%,100%{stroke:#a8a29c}25%,40%{stroke:var(--orange)}}
+  @media(max-width:680px){.chain-flow:not(.chain-flow--compact) svg{width:680px;max-width:none;height:56px}.chain-flow--compact{width:100px;flex-basis:100px}}
+  @media(prefers-reduced-motion:reduce){.chain-packet,.chain-block{animation:none}.chain-packet{stroke-dasharray:5 195;opacity:.5}}
+</style>

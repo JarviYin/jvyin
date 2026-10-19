@@ -1,0 +1,15 @@
+---
+import { aiProducts } from '../../data/ai-agents';
+import { getAgentFeed } from '../../lib/ai-agents';
+import { shortDate } from '../../lib/landscape';
+const feed = getAgentFeed();
+const featured = ['claude', 'chatgpt', 'deepseek', 'grok-bot'].map(id => aiProducts.find(item => item.id === id)!);
+const repos = feed.sources.filter(source => source.kind === 'repo');
+---
+<section class="agent-frontier" aria-labelledby="agent-focus-title">
+  <div class="agent-focus-head"><p class="editorial-kicker">THE AGENT SHIFT <span aria-hidden="true">↗</span></p><h2 id="agent-focus-title">从回答问题，到完成工作。</h2><p>追踪模型、产品与执行能力，读懂 AI agents 正在发生的变化。</p></div>
+  <div class="agent-featured">{featured.map((item, i) => <a href={item.url} target="_blank" rel="noopener noreferrer"><span class="agent-feature-number">0{i + 1}</span><div><h3>{item.name}<span aria-hidden="true">↗</span></h3><p>{item.capabilities.slice(0, 2).join(' · ')}</p></div></a>)}</div>
+  <div class="agent-pulse-head"><h3>Open-source pulse</h3><span>仓库关注度，不代表用户数或模型能力</span></div>
+  <div class="agent-repo-grid">{repos.map(repo => <article><div><a href={repo.repoUrl || repo.url} target="_blank" rel="noopener noreferrer">{repo.name} <span aria-hidden="true">↗</span></a><p>{repo.observedAt ? shortDate(repo.observedAt) : '尚未取得数据'} · {repo.status === 'ok' ? '公开观测' : '保留上次数据 / 未取得'}</p></div><strong>{repo.stars === undefined ? '—' : new Intl.NumberFormat('en-US').format(repo.stars)}<small>GitHub stars</small></strong></article>)}</div>
+  <p class="agent-data-note">公开仓库累计 stars；不等于活跃开发者、付费用户或真实任务完成率。<a href="#sources">来源与更新说明 ↗</a></p>
+</section>

@@ -1,0 +1,316 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const apiBase = import.meta.env.PUBLIC_SUBSCRIBE_API_URL ?? '';
+---
+
+<BaseLayout title="管理后台" noindex>
+  <div class="page-head">
+    <h1>管理后台</h1>
+    <p class="lede">编辑与发布 Newsletter</p>
+  </div>
+
+  <!-- 登录 -->
+  <div id="login-box" class="notice">
+    <h2 style="font-family: var(--font-serif); margin-bottom: 0.6rem">登录</h2>
+    <form class="subscribe-form" id="login-form">
+      <input type="password" id="login-password" placeholder="管理密码" required autocomplete="current-password" />
+      <button type="submit">登录</button>
+    </form>
+    <div class="form-msg" id="login-msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- 主面板 -->
+  <div id="panel" style="display: none">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.6rem">
+      <h2 style="font-family: var(--font-serif)">Newsletter 期数</h2>
+      <div style="display: flex; gap: 0.6rem">
+        <button class="admin-btn primary" id="btn-new">＋ 新建一期</button>
+        <button class="admin-btn" id="btn-logout">退出</button>
+      </div>
+    </div>
+    <div id="subs-summary" class="muted" style="font-size: 0.9rem; margin: 0.5rem 0 1rem"></div>
+
+    <div id="issue-list"></div>
+
+    <div id="editor" style="display: none" class="notice">
+      <h3 id="editor-heading" style="font-family: var(--font-serif)"></h3>
+      <span id="dirty-badge" class="badge" style="display: none">未保存</span>
+      <label class="admin-label">期号（数字，如 002）</label>
+      <input class="admin-input" id="f-id" placeholder="002" />
+      <label class="admin-label">标题（存档页与邮件头部显示）</label>
+      <input class="admin-input" id="f-title" placeholder="本期标题" />
+      <label class="admin-label">邮件主题行</label>
+      <input class="admin-input" id="f-subject" placeholder="jvyin 的 newsletter · 第 002 期：…" />
+      <label class="admin-label">摘要（邮件预览文字）</label>
+      <input class="admin-input" id="f-desc" placeholder="一句话摘要" />
+      <label class="admin-label">正文（Markdown）</label>
+      <textarea class="admin-input" id="f-body" rows="14" placeholder="你好，&#10;&#10;（Markdown 正文）"></textarea>
+      <div class="admin-actions">
+        <button class="admin-btn" id="btn-save">保存草稿</button>
+        <button class="admin-btn" id="btn-copy-html">复制全文 HTML（Substack）</button>
+        <button class="admin-btn" id="btn-dryrun">试运行（不发信）</button>
+        <button class="admin-btn primary" id="btn-publish">发布并发送</button>
+        <button class="admin-btn" id="btn-cancel">取消</button>
+      </div>
+      <div class="form-msg" id="editor-msg" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script define:vars={{ apiBase }}>
+    const TOKEN_KEY = 'jvyin_admin_token';
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) =>
+      String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const ep = (id) => 'EP' + String(Number(id)).padStart(2, '0');
+    let issuesCache = [];
+
+    const api = async (path, opts = {}) => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const res = await fetch(`${apiBase}${path}`, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(opts.headers ?? {}),
+        },
+      });
+      const body = await res.json().catch(() => null);
+      if (res.status === 401 && path !== '/api/admin/login') {
+        logout(true);
+        throw new Error('登录已过期，请重新登录');
+      }
+      return { res, body };
+    };
+
+    const showMsg = (el, ok, text) => {
+      el.className = 'form-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = (ok ? '✅ ' : '❌ ') + text;
+    };
+
+    const logout = (silent = false) => {
+      localStorage.removeItem(TOKEN_KEY);
+      $('login-box').style.display = '';
+      $('panel').style.display = 'none';
+      if (!silent) showMsg($('login-msg'), true, '已退出登录');
+    };
+
+    /* ---- 登录 ---- */
+    $('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = $('login-password').value;
+      const msg = $('login-msg');
+      msg.className = 'form-msg';
+      msg.textContent = '登录中…';
+      try {
+        const res = await fetch(`${apiBase}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const body = await res.json().catch(() => null);
+        if (res.ok && body?.ok && body.token) {
+          localStorage.setItem(TOKEN_KEY, body.token);
+          $('login-box').style.display = 'none';
+          $('panel').style.display = '';
+          await refresh();
+        } else {
+          showMsg(msg, false, body?.message ?? '登录失败');
+        }
+      } catch {
+        showMsg(msg, false, '网络错误，请重试');
+      }
+    });
+
+    $('btn-logout').addEventListener('click', () => logout());
+
+    /* ---- 列表与订阅者 ---- */
+    async function refresh() {
+      await Promise.all([loadIssues(), loadSubscribers()]);
+    }
+
+    async function loadSubscribers() {
+      try {
+        const { res, body } = await api('/api/admin/subscribers');
+        if (!res.ok || !body?.ok) return;
+        const c = body.counts ?? {};
+        $('subs-summary').innerHTML =
+          `订阅者：<b>${c.confirmed ?? 0}</b> 确认 · ${c.pending ?? 0} 待确认 · ${c.unsubscribed ?? 0} 退订 · ${c.bounced ?? 0} 退信 ` +
+          `（<a href="#" id="toggle-subs" style="border-bottom:1px dotted var(--border)">查看名单</a>）`;
+        const rows = (body.subscribers ?? [])
+          .map((s) => `<div class="admin-row"><span>${esc(s.email)}</span><span class="badge">${esc(s.status)}</span></div>`)
+          .join('');
+        $('toggle-subs')?.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          let box = $('subs-detail');
+          if (box) { box.remove(); return; }
+          box = document.createElement('div');
+          box.id = 'subs-detail';
+          box.className = 'notice';
+          box.style.marginBottom = '1rem';
+          box.innerHTML = rows || '<p class="muted">暂无订阅者</p>';
+          $('subs-summary').after(box);
+        });
+      } catch {}
+    }
+
+    async function loadIssues() {
+      const list = $('issue-list');
+      try {
+        const { res, body } = await api('/api/admin/issues');
+        if (!res.ok || !body?.ok) throw new Error(body?.message);
+        const issues = body.issues ?? [];
+        issuesCache = issues;
+        list.innerHTML = issues.length
+          ? issues
+              .map(
+                (i) => `
+                <div class="admin-row">
+                  <div>
+                    <b style="font-family:var(--font-serif)">${ep(i.id)}</b> · ${esc(i.title || '未命名')}
+                    <span class="badge ${i.status === 'published' ? 'published' : ''}">${esc(i.status === 'published' ? '已发布' : '草稿')}</span>
+                    ${i.pubDate ? `<span class="muted" style="font-size:0.8rem">${esc(i.pubDate)}</span>` : ''}
+                  </div>
+                  <button class="admin-btn" data-id="${esc(i.id)}">编辑</button>
+                </div>`
+              )
+              .join('')
+          : '<p class="muted">还没有任何一期，点「＋ 新建一期」开始。</p>';
+        list.querySelectorAll('button[data-id]').forEach((btn) =>
+          btn.addEventListener('click', () => openEditor(issues.find((i) => String(i.id) === btn.dataset.id)))
+        );
+      } catch (err) {
+        list.innerHTML = `<p class="form-msg err">❌ ${esc(err.message ?? '加载失败')}</p>`;
+      }
+    }
+
+    /* ---- 编辑器 ---- */
+    let dirty = false;
+    const markDirty = (d) => {
+      dirty = d;
+      $('dirty-badge').style.display = d ? '' : 'none';
+    };
+
+    function openEditor(issue) {
+      $('editor').style.display = '';
+      $('editor-heading').textContent = issue ? `编辑 ${ep(issue.id)}` : '新建一期';
+      $('f-id').value = issue ? issue.id : nextIssueId;
+      $('f-id').readOnly = Boolean(issue);
+      $('f-title').value = issue?.title ?? '';
+      $('f-subject').value = issue?.subject ?? '';
+      $('f-desc').value = issue?.description ?? '';
+      $('f-body').value = issue?.body ?? '';
+      $('editor-msg').className = 'form-msg';
+      $('editor-msg').textContent = '';
+      markDirty(false);
+      ['f-title', 'f-subject', 'f-desc', 'f-body'].forEach((fid) =>
+        $(fid).addEventListener('input', () => markDirty(true))
+      );
+      $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    let nextIssueId = '002';
+    $('btn-new').addEventListener('click', () => openEditor(null));
+
+    $('btn-cancel').addEventListener('click', () => {
+      $('editor').style.display = 'none';
+    });
+
+    $('btn-copy-html').addEventListener('click', async () => {
+      const id = $('f-id').value.trim();
+      const issue = issuesCache.find((i) => String(i.id) === id);
+      const html = issue?.articleHtml;
+      const msg = $('editor-msg');
+      if (!html) {
+        showMsg(msg, false, '没有可复制的 HTML：请先保存草稿或发布。');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(html);
+        showMsg(msg, true, '全文 HTML 已复制到剪贴板，可直接粘贴到 Substack 编辑器。');
+      } catch {
+        showMsg(msg, false, '复制失败：请检查浏览器剪贴板权限。');
+      }
+    });
+
+    async function saveIssue() {
+      const id = $('f-id').value.trim();
+      const payload = {
+        title: $('f-title').value.trim(),
+        subject: $('f-subject').value.trim(),
+        description: $('f-desc').value.trim(),
+        body: $('f-body').value.trim(),
+      };
+      const msg = $('editor-msg');
+      try {
+        const { res, body } = await api(`/api/admin/issues/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        showMsg(msg, res.ok && body?.ok, body?.message ?? '保存失败');
+        if (res.ok && body?.ok) {
+          nextIssueId = String(Number(id) + 1).padStart(3, '0');
+          markDirty(false);
+          await loadIssues();
+          return true;
+        }
+        return false;
+      } catch (err) {
+        showMsg(msg, false, err.message ?? '保存失败');
+        return false;
+      }
+    }
+
+    async function publishIssue(dryRun) {
+      // 先保存当前编辑内容，再发布（避免把旧内容发出去）
+      const id = $('f-id').value.trim();
+      const msg = $('editor-msg');
+      msg.className = 'form-msg';
+      msg.textContent = '保存中…';
+      const saved = await saveIssue();
+      if (!saved) return;
+      msg.className = 'form-msg';
+      msg.textContent = dryRun ? '试运行中…' : '发布中（发送邮件）…';
+      try {
+        const { res, body } = await api(`/api/admin/issues/${encodeURIComponent(id)}/publish${dryRun ? '?dryrun=1' : ''}`, {
+          method: 'POST',
+        });
+        showMsg(msg, res.ok && body?.ok, body?.message ?? '发布失败');
+        if (res.ok && body?.ok) {
+          nextIssueId = String(Number(id) + 1).padStart(3, '0');
+          await loadIssues();
+        }
+      } catch (err) {
+        showMsg(msg, false, err.message ?? '发布失败');
+      }
+    }
+
+    $('btn-save').addEventListener('click', saveIssue);
+    $('btn-dryrun').addEventListener('click', () => publishIssue(true));
+    $('btn-publish').addEventListener('click', () => {
+      const id = $('f-id').value.trim();
+      const ok = confirm(`确定发布 ${ep(id)} 并发送给所有已确认订阅者？`);
+      if (ok) publishIssue(false);
+    });
+
+    /* ---- 启动 ---- */
+    (async () => {
+      try {
+        await loadIssues();
+      } catch {}
+      if (localStorage.getItem(TOKEN_KEY)) {
+        $('login-box').style.display = 'none';
+        $('panel').style.display = '';
+        await refresh();
+      } else {
+        try {
+          const { res } = await api('/api/admin/issues');
+          if (res.status !== 401) {
+            // 服务端未配置密钥时也显示登录框
+          }
+        } catch {}
+      }
+    })();
+  </script>
+</BaseLayout>

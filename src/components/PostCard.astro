@@ -1,0 +1,21 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+const date = post.data.pubDate.toISOString().slice(0, 10);
+---
+
+<a class="card" href={`/blog/${post.id}/`}>
+  <div class="card-meta">
+    <time datetime={post.data.pubDate.toISOString()}>{date}</time>
+    {
+      post.data.tags.length > 0 && <span>{post.data.tags.map((t) => `#${t}`).join(' ')}</span>
+    }
+  </div>
+  <div class="card-title">{post.data.title}</div>
+  {post.data.description && <div class="card-desc">{post.data.description}</div>}
+</a>
